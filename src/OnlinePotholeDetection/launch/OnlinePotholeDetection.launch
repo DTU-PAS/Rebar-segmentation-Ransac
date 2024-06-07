@@ -1,0 +1,13 @@
+<launch>
+
+    <!-- RVIZ visualization -->
+    <arg name="rviz_file" default="pothole" />
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find OnlinePotholeDetection)/rviz/$(arg rviz_file).rviz" />
+    
+    <!-- RANSAC -->
+    <node name="ransac_node" pkg="OnlinePotholeDetection" type="ransac_node" output="screen"/>
+
+    <!-- Detection Node 
+    <node name="detection_node" pkg="OnlinePotholeDetection" type="detection_node" output="screen"/>-->
+
+</launch>

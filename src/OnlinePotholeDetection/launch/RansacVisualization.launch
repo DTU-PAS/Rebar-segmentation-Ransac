@@ -1,0 +1,18 @@
+<launch>
+
+    <!-- ROSBAG play -->
+    <arg name="bagfile" default="_2023-03-21-10-21-41" />
+    <arg name="startsec" default="10" />
+    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(find OnlinePotholeDetection)/bagfiles/$(arg bagfile).bag -s $(arg startsec)"/>
+
+    <!-- RVIZ visualization-->
+    <arg name="rviz_file" default="pothole" />
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find OnlinePotholeDetection)/rviz/$(arg rviz_file).rviz" />
+
+    <!-- Extrinsic calibration-->
+    <!-- <node name="ExtrinsicCalibrationNode" pkg="OnlinePotholeDetection" type= "ExtrinsicCalibrationNode.py"/> -->
+
+    <!-- RANSAC -->
+    <node name="ransac_node" pkg="OnlinePotholeDetection" type="ransac_node" output="screen"/>
+
+</launch>
