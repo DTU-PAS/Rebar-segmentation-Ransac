@@ -1,3 +1,4 @@
+# import rospy
 import cv2
 import numpy as np
 import random
@@ -5,6 +6,10 @@ from skimage.morphology import skeletonize
 from scipy.linalg import svd
 import matplotlib.pyplot as plt
 from plantcv import plantcv as pcv
+from sensor_msgs.msg import Image
+from std_msgs.msg import String
+import struct
+from cv_bridge import CvBridge, CvBridgeError
 
 
 def open_by_reconstruction(src, iterations = 1, ksize = 3, debug = False):
@@ -143,15 +148,85 @@ def fit_line_to_points(points):
     
     return centroid, direction_vector
 
+def findRebars(img):
+    gray_orig = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray_orig = cv2.dilate(gray_orig, np.ones((3,3), np.uint8), iterations=1)
+    gray_orig = cv2.erode(gray_orig, np.ones((3,3), np.uint8), iterations=1)
+    height, width = gray_orig.shape
+
+    # Erode the picture so much that all small objects are removed
+    # Next reconstruct the image by dialating it again and masking it with the original image
+    small_obj_removed = open_by_reconstruction(gray_orig, 4, 4, False)
+
+    cv2.imshow('Some stuff removed', small_obj_removed)
+    cv2.waitKey(1)
+
+    skeleton = skeletonize(small_obj_removed, method='lee').astype(np.uint8)
+    skeleton = 255 * skeleton
+
+    cv2.imshow('skeleton_orig', skeleton)
+    cv2.waitKey(1)
+
+
+    rospy.loginfo("Rebar segmentation done")
+
+
+# class ImageSubscriber:
+#     def __init__(self):
+#         self.br = CvBridge()
+#         # Subscribe to the depth and color image topics
+#         self.depth_sub = rospy.Subscriber('/camera/depth/image_rect_raw', Image, self.depth_callback)
+#         self.color_sub = rospy.Subscriber('/label', Image, self.color_callback)
+        
+#         self.depth_image = None
+#         self.color_image = None
+
+#     def depth_callback(self, data):
+#         try:
+#             # Convert depth image to numpy array
+#             dtype = np.dtype('uint16')  # Change this according to the depth image type
+#             depth_image = np.frombuffer(data.data, dtype=dtype).reshape(data.height, data.width)
+#             # calcualted_depth = depth_image[150, 98] * 0.001
+#             # rospy.loginfo(f"Received depth image: {calcualted_depth}")
+#             self.depth_image = depth_image
+#             rospy.loginfo("Received depth image")
+#         except Exception as e:
+#             rospy.logerr(f"Error converting depth image: {e}")
+
+#     def color_callback(self, data):
+#         try:
+#             # Convert color image to numpy array
+#             # color_image = np.frombuffer(data.data, dtype=np.uint8).reshape(data.height, data.width, -1)
+#             self.image = self.br.imgmsg_to_cv2(data)
+#             # self.color_image = color_image
+#             # cv2.imshow('color', self.image)
+#             # cv2.waitKey(1)
+#             findRebars(self.image)
+#             rospy.loginfo("Received color image")
+#         except Exception as e:
+#             rospy.logerr(f"Error converting color image: {e}")
+
+#     def run(self):
+#         rospy.spin()
+
+# if __name__ == '__main__':
+#     rospy.init_node('image_subscriber', anonymous=True)
+#     img_sub = ImageSubscriber()
+#     img_sub.run()
+
 
 # Example usage
 if __name__ == "__main__":
     # open the image binary image
-    img_orig = cv2.imread('/home/dtu/Desktop/Rebar_segmentation_Ransac/data/Pictures/ransac_1.png')
-    gray_orig = cv2.cvtColor(img_orig, cv2.COLOR_BGR2GRAY)
-    cv2.imshow('original', gray_orig)
-    cv2.waitKey(0)
+    img_orig = cv2.imread('/home/dtu/Desktop/Rebar-segmentation-Ransac/data/Pictures/ransac_1.png', cv2.IMREAD_COLOR)
+    #rs.get_depth_frame()
 
+    # cv2.imshow('original', img_orig)
+    # cv2.waitKey(0)
+    
+    gray_orig = cv2.cvtColor(img_orig, cv2.COLOR_BGR2GRAY)
+    # cv2.imshow('original', gray_orig)
+    # cv2.waitKey(0)
     gray_orig = cv2.dilate(gray_orig, np.ones((3,3), np.uint8), iterations=1)
     gray_orig = cv2.erode(gray_orig, np.ones((3,3), np.uint8), iterations=1)
     height, width = gray_orig.shape
@@ -232,10 +307,10 @@ if __name__ == "__main__":
     # cv2.imshow('small blobs removed horizontal', pruned_horizontal2)
     # cv2.waitKey(0)
 
-    reconstructed_vertical_skeleton = reconstruct_skeleton(pruned_vertical2, skeleton, 3, False)
+    reconstructed_vertical_skeleton = reconstruct_skeleton(pruned_vertical2, skeleton, 3, True)
 
 
-    reconstructed_horizontal_skeleton = reconstruct_skeleton(pruned_horizontal2, skeleton, 3, False)
+    reconstructed_horizontal_skeleton = reconstruct_skeleton(pruned_horizontal2, skeleton, 3, True)
 
     # cv2.imshow('reconstructed_vertical', reconstructed_vertical_skeleton)
     # cv2.waitKey(0)
@@ -264,8 +339,8 @@ if __name__ == "__main__":
     merged = cv2.addWeighted(merged, 0.5, horizontal_clusters, 1, 0)
 
     # # show the image
-    cv2.imshow('skeleton on original', merged)
-    cv2.waitKey(0)
+    # cv2.imshow('skeleton on original', merged)
+    # cv2.waitKey(0)
 
 
     # translate every white pixel to a point in camera frame
@@ -277,6 +352,8 @@ if __name__ == "__main__":
     # Inverse of the camera matrix
     K_inv = np.linalg.inv(K)
 
+    # TODO This needs to be the real distance from the camera to the rebars
+    # Either use the pcd or the depth image to get the distance
     Z = 0.34
 
     # white_pixels = np.column_stack(np.where(skeleton == 255))
@@ -308,7 +385,7 @@ if __name__ == "__main__":
         camera_cluster_coordinates.append(camera_coordinates)
 
 
-    file = open("filtered_camera_coordinates.csv",'w')
+    file = open("/home/dtu/Desktop/Rebar-segmentation-Ransac/filtered_camera_coordinates.csv",'w')
 
 
     fig = plt.figure()
@@ -331,6 +408,7 @@ if __name__ == "__main__":
         Y = coord[:, 1]
         Z = coord[:, 2]
 
+        # TODO This should not be hardcoded. My first idea is improving the ransac segmentation. 
         mask = X <= 0.8
 
         # # Filter camera coordinates using the mask
@@ -360,7 +438,14 @@ if __name__ == "__main__":
 
         # Save the filtered camera coordinates to a csv file. Without the scientific notation and 3 decimal places
         # insert header with the column names
-        np.savetxt(file, filtered_camera_coordinates, fmt='%.4f', delimiter=',', header=f'Rebar {i} \n X,Y,Z', comments='')
+        file.write(f'Rebar {i} \n')
+        file.write("point on line,")
+        np.savetxt(file, point_on_line, fmt='%.4f', delimiter=',', header='X,Y,Z', comments='')
+        file.write('\n')
+        file.write("direction vector,")
+        np.savetxt(file, direction_vector, fmt='%.4f', delimiter=',', header='X,Y,Z', comments='')
+        file.write('\n')
+        np.savetxt(file, filtered_camera_coordinates, fmt='%.4f', delimiter=',', header=f'X,Y,Z', comments='')
         file.write('\n')
 
         ax.scatter(filtered_X, filtered_Y, filtered_Z, c=np.random.rand(3,), marker='o', label='%s Rebar' % i)
