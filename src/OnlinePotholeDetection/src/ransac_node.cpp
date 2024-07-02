@@ -11,7 +11,8 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <dynamic_reconfigure/server.h>
-#include </home/dtu/Desktop/Rebar_segmentation_Ransac/devel/include/OnlinePotholeDetection/MyParamsConfig.h>
+#include </home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/include/OnlinePotholeDetection/MyParamsConfig.h>
+// #include <MyParamsConfig.h>
 
 class RansacNode
 {
