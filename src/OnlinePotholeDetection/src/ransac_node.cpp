@@ -185,12 +185,14 @@ public:
         }
 
         cv::Mat gray_orig;
-        gray_orig = img.clone();
+        //gray_orig = img.clone();
         // Convert the image to grayscale
+        // ROS_INFO("Converting image to grayscale");
         cv::cvtColor(img, gray_orig, cv::COLOR_RGB2GRAY);
 
         // Cluster the image and remove small clusters
         cv::Mat labels, stats, centroids;
+        // ROS_INFO("Clustering image");
         cv::connectedComponentsWithStats(gray_orig, labels, stats, centroids);
         for (int i = 1; i < stats.rows; ++i)
         {
@@ -204,40 +206,50 @@ public:
 
         float vertical_angle, horizontal_angle;
 
+        // ROS_INFO("Finding rotation");
         std::pair<double, double> angles = find_rotation(gray_orig, show_angles);
 
+        // ROS_INFO("Rotating image");
         cv::Mat rotated_image = rotate_image("Image", gray_orig, angles.second, show_rotated_image);
         cv::Mat thresholded_image;
+        // ROS_INFO("Thresholding image");
         cv::threshold(rotated_image, thresholded_image, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
         // Apply opencv ximgproc thinning algorithm
         cv::Mat thinned_image;
+        // ROS_INFO("Thinning image");
         cv::ximgproc::thinning(rotated_image, thinned_image);
 
         // Call the split_horizontal_and_vertical function
+        // ROS_INFO("Splitting image");
         auto resulting_split = split_horizontal_and_vertical(thinned_image, 10, show_split_image);
 
         // Extract the results
         cv::Mat pruned_vertical = resulting_split.first;
         cv::Mat pruned_horizontal = resulting_split.second;
 
+        // ROS_INFO("Reconstructing skeleton");
         cv::Mat reconstructed_vertical_skeleton = reconstruct_skeleton("Vertical", pruned_vertical, thinned_image, 3, 10, show_reconstructed_image);
         cv::Mat reconstructed_horizontal_skeleton = reconstruct_skeleton("Horizontal", pruned_horizontal, thinned_image, 3, 10, show_reconstructed_image);
 
+        // ROS_INFO("Removing small blobs");
         cv::Mat clean_vertical = remove_small_blobs("Vertical", reconstructed_vertical_skeleton, 70, show_image_without_blobs);
         cv::Mat clean_horizontal = remove_small_blobs("Horizontal", reconstructed_horizontal_skeleton, 70, show_image_without_blobs);
 
+        // ROS_INFO("Reverse vertical image rotating image");
         cv::Mat back_rotated_image_vertical = rotate_image("Vertical - reverse rotation", clean_vertical, -angles.second, show_rotated_image);
         cv::Mat thresholded_image_vertical;
         cv::threshold(back_rotated_image_vertical, thresholded_image_vertical, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
         cv::Mat vertical;
         cv::ximgproc::thinning(thresholded_image_vertical, vertical);
 
+        // ROS_INFO("Reverse horizontal image rotating image");
         cv::Mat back_rotated_image_horizontal = rotate_image("Horizontal - reverse rotation", clean_horizontal, -angles.second, show_rotated_image);
         cv::Mat thresholded_image_horizontal;
         cv::threshold(back_rotated_image_horizontal, thresholded_image_horizontal, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
         cv::Mat horizontal;
         cv::ximgproc::thinning(thresholded_image_horizontal, horizontal);
 
+        // ROS_INFO("Clustering vertical and horizontal skeletons");
         cluster_info result_clustering_vertical = cluster_skeleton("Vertical", vertical, show_clusters);
         cluster_info result_clustering_horizontal = cluster_skeleton("Horizontal", horizontal, show_clusters);
 
@@ -249,6 +261,12 @@ public:
 
         int num_labels_vertical = result_clustering_vertical.num_clusters;
         int num_labels_horizontal = result_clustering_horizontal.num_clusters;
+
+        // // // ROS_INFO("Finding area of interest");
+        // ROS_INFO("Shape of gray_orig: %i, %i", gray_orig.rows, gray_orig.cols);
+        // ROS_INFO("Shape of img: %i, %i", img.rows, img.cols);
+        // ROS_INFO("Shape of vertical_labels: %i, %i", vertical_labels.rows, vertical_labels.cols);
+        // ROS_INFO("Shape of horizontal_labels: %i, %i", horizontal_labels.rows, horizontal_labels.cols);
 
         auto result_vertical = find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, img, show_roi);
         auto result_horizontal = find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, img, show_roi);
@@ -275,12 +293,16 @@ public:
             // Draw a line between the closest pixels
             for (size_t i = 0; i < closest_pixels_vertical.size(); ++i)
             {
+                //ROS_INFO("Vertical: (%i, %i) - (%i, %i)", closest_pixels_vertical[i].first.x, closest_pixels_vertical[i].first.y, closest_pixels_vertical[i].second.x, closest_pixels_vertical[i].second.y);
                 cv::line(img, closest_pixels_vertical[i].first, closest_pixels_vertical[i].second, cv::Scalar(0, 0, 255), 2);
             }
             for (size_t i = 0; i < closest_pixels_horizontal.size(); ++i)
             {
+                //ROS_INFO("Horizontal: (%i, %i) - (%i, %i)", closest_pixels_horizontal[i].first.x, closest_pixels_horizontal[i].first.y, closest_pixels_horizontal[i].second.x, closest_pixels_horizontal[i].second.y);
                 cv::line(img, closest_pixels_horizontal[i].first, closest_pixels_horizontal[i].second, cv::Scalar(255, 0, 0), 2);
             }
+            
+            // std::cout << std::endl;
 
             // Show the image
             cv::namedWindow("Projected_Image");
