@@ -3,6 +3,13 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <ros/ros.h>
+#include <AOITracker.h>
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <numeric>
+#include <random>
 
 struct cluster_info
 {   
@@ -13,20 +20,18 @@ struct cluster_info
     cv::Mat centroids;
 };
 
-struct frame_AOI_info
-{
-    std::vector<std::pair<cv::Point, cv::Point>> closest_pixels;
-    std::vector<std::pair<cv::Point, cv::Point>> bboxs;
-};
+// struct frame_AOI_info
+// {
+//     std::vector<std::pair<cv::Point, cv::Point>> closest_pixels;
+//     std::vector<std::pair<cv::Point, cv::Point>> bboxs;
+// };
 
 
-struct tracked_AOI_info
-{
-    std::vector<std::pair<cv::Point, cv::Point>> closest_pixels;
-    std::vector<std::pair<cv::Point, cv::Point>> bboxs;
-    std::vector<std::pair<cv::Point, cv::Point>> prev_closest_pixels;
-    std::vector<std::pair<cv::Point, cv::Point>> prev_bboxs;
-};
+// struct tracked_AOI_info
+// {
+//     std::vector<std::pair<cv::Point, cv::Point>> closest_pixels;
+//     std::vector<std::pair<cv::Point, cv::Point>> bboxs;
+// };
 
 std::pair<double, double> find_rotation(cv::Mat &image, bool debug_level);
 cv::Mat rotate_image(const std::string &name, const cv::Mat &image, double angle, bool debug_level);

@@ -27,10 +27,9 @@
 
 // Custom code
 #include <rebar_seg.h>
+#include <AOITracker.h>
 
 bool aligned_depth = false;
-
-// std::vector<tracked_AOI_info> tracked_AOIs;
 
 class RansacNode
 {
@@ -46,6 +45,8 @@ public:
         // camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
         // rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
         // depth_sub = nh.subscribe("/camera/depth/image_rect_raw", 1, &RansacNode::depth_callback, this);
+
+        tracker.initialize(5);
     }
 
     void pointcloud_callback(const sensor_msgs::PointCloud2ConstPtr &input)
@@ -214,6 +215,19 @@ public:
 
         cv::Mat img(img_height, img_width, CV_8UC3, image_msg->data.data());
 
+        main_img = img;
+
+        detect_AOI();
+
+        if (image_msg->data.size() != img_height * img_width * 3)
+            ROS_ERROR("data size: %lu (should be: %i)", image_msg->data.size(), img_height * img_width * 3);
+        // Publish the image message
+        label_pub.publish(image_msg);
+    }
+
+    void detect_AOI()
+    {
+        cv::Mat img = main_img.clone();
         if (show_orig_image)
         {
             cv::imshow("Original Ransac Image", img);
@@ -249,50 +263,40 @@ public:
         }
         float vertical_angle, horizontal_angle;
 
-        // ROS_INFO("Finding rotation");
         std::pair<double, double> angles = find_rotation(gray_orig, show_angles);
 
-        // ROS_INFO("Rotating image");
         cv::Mat rotated_image = rotate_image("Image", gray_orig, angles.second, show_rotated_image);
         cv::Mat thresholded_image;
-        // ROS_INFO("Thresholding image");
         cv::threshold(rotated_image, thresholded_image, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
         // Apply opencv ximgproc thinning algorithm
         cv::Mat thinned_image;
-        // ROS_INFO("Thinning image");
         cv::ximgproc::thinning(rotated_image, thinned_image);
 
         // Call the split_horizontal_and_vertical function
-        // ROS_INFO("Splitting image");
         auto resulting_split = split_horizontal_and_vertical(thinned_image, 10, show_split_image);
 
         // Extract the results
         cv::Mat pruned_vertical = resulting_split.first;
         cv::Mat pruned_horizontal = resulting_split.second;
 
-        // ROS_INFO("Reconstructing skeleton");
         cv::Mat reconstructed_vertical_skeleton = reconstruct_skeleton("Vertical", pruned_vertical, thinned_image, 3, 10, show_reconstructed_image);
         cv::Mat reconstructed_horizontal_skeleton = reconstruct_skeleton("Horizontal", pruned_horizontal, thinned_image, 3, 10, show_reconstructed_image);
 
-        // ROS_INFO("Removing small blobs");
         cv::Mat clean_vertical = remove_small_blobs("Vertical", reconstructed_vertical_skeleton, 70, show_image_without_blobs);
         cv::Mat clean_horizontal = remove_small_blobs("Horizontal", reconstructed_horizontal_skeleton, 70, show_image_without_blobs);
 
-        // ROS_INFO("Reverse vertical image rotating image");
         cv::Mat back_rotated_image_vertical = rotate_image("Vertical - reverse rotation", clean_vertical, -angles.second, show_rotated_image);
         cv::Mat thresholded_image_vertical;
         cv::threshold(back_rotated_image_vertical, thresholded_image_vertical, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
         cv::Mat vertical;
         cv::ximgproc::thinning(thresholded_image_vertical, vertical);
 
-        // ROS_INFO("Reverse horizontal image rotating image");
         cv::Mat back_rotated_image_horizontal = rotate_image("Horizontal - reverse rotation", clean_horizontal, -angles.second, show_rotated_image);
         cv::Mat thresholded_image_horizontal;
         cv::threshold(back_rotated_image_horizontal, thresholded_image_horizontal, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
         cv::Mat horizontal;
         cv::ximgproc::thinning(thresholded_image_horizontal, horizontal);
 
-        // ROS_INFO("Clustering vertical and horizontal skeletons");
         cluster_info result_clustering_vertical = cluster("Vertical", vertical, show_clusters);
         cluster_info result_clustering_horizontal = cluster("Horizontal", horizontal, show_clusters);
 
@@ -302,51 +306,40 @@ public:
         int num_labels_vertical = result_clustering_vertical.num_clusters;
         int num_labels_horizontal = result_clustering_horizontal.num_clusters;
 
-        // // // ROS_INFO("Finding area of interest");
-        // ROS_INFO("Shape of gray_orig: %i, %i", gray_orig.rows, gray_orig.cols);
-        // ROS_INFO("Shape of img: %i, %i", img.rows, img.cols);
-        // ROS_INFO("Shape of vertical_labels: %i, %i", vertical_labels.rows, vertical_labels.cols);
-        // ROS_INFO("Shape of horizontal_labels: %i, %i", horizontal_labels.rows, horizontal_labels.cols);
-
         auto result_vertical = find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, img, show_roi);
         auto result_horizontal = find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, img, show_roi);
 
-        std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_vertical = result_vertical.closest_pixels;
-        std::vector<std::pair<cv::Point, cv::Point>> bboxs_vertical = result_vertical.bboxs;
-
-        std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_horizontal = result_horizontal.closest_pixels;
-        std::vector<std::pair<cv::Point, cv::Point>> bboxs_horizontal = result_horizontal.bboxs;
-
-        for (size_t i = 0; i < bboxs_vertical.size(); ++i)
+        for (size_t i = 0; i < result_vertical.aoiList.size(); ++i)
         {
-            cv::rectangle(img, bboxs_vertical[i].first, bboxs_vertical[i].second, cv::Scalar(0, 255, 0), 2);
-        }
-        for (size_t i = 0; i < bboxs_horizontal.size(); ++i)
-        {
-            cv::rectangle(img, bboxs_horizontal[i].first, bboxs_horizontal[i].second, cv::Scalar(0, 255, 255), 2);
-        }
-
-        for (size_t i = 0; i < closest_pixels_vertical.size(); ++i)
-        {
-            // const auto &pair = clusterPairs[i];
-            const auto &pixels = closest_pixels_vertical[i];
+            const auto &pixels = result_vertical.aoiList[i].closest_pixels_pair;
             cv::line(img, pixels.first, pixels.second, cv::Scalar(0, 0, 255), 2);
+            cv::rectangle(img, result_vertical.aoiList[i].bbox.first, result_vertical.aoiList[i].bbox.second, cv::Scalar(0, 255, 0), 2);
         }
-        for (size_t i = 0; i < closest_pixels_horizontal.size(); ++i)
+        for (size_t i = 0; i < result_horizontal.aoiList.size(); ++i)
         {
-            // const auto &pair = clusterPairs[i];
-            const auto &pixels = closest_pixels_horizontal[i];
+            const auto &pixels = result_horizontal.aoiList[i].closest_pixels_pair;
             cv::line(img, pixels.first, pixels.second, cv::Scalar(255, 0, 0), 2);
+            cv::rectangle(img, result_horizontal.aoiList[i].bbox.first, result_horizontal.aoiList[i].bbox.second, cv::Scalar(0, 255, 255), 2);
         }
+
+        tracker.addFrame(result_vertical);
+        tracker.addFrame(result_horizontal);
+
+        calculate_confidence();
 
         cv::imshow("Projected_Image", img);
         cv::waitKey(1);
-        // }
+    }
 
-        if (image_msg->data.size() != img_height * img_width * 3)
-            ROS_ERROR("data size: %lu (should be: %i)", image_msg->data.size(), img_height * img_width * 3);
-        // Publish the image message
-        label_pub.publish(image_msg);
+    void calculate_confidence()
+    {
+        // Get and print tracked AOIs for the current frame
+        auto trackedAOIs = tracker.getCurrentTrackedAOIs();
+        for (const auto &aoi : trackedAOIs)
+        {
+            std::cout << "Tracked AOI ID: " << aoi.id << ", BBox: (" << aoi.bbox.first.x << ", " << aoi.bbox.first.y << ") - ("
+                      << aoi.bbox.second.x << ", " << aoi.bbox.second.y << "), Confidence: " << aoi.confidence << std::endl;
+        }
     }
 
     void dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
@@ -388,6 +381,9 @@ private:
 
     cv::Mat rgb_image;
     cv::Mat depth_image;
+    cv::Mat main_img;
+
+    AOITracker tracker;
 
     // Flags for showing images
     bool show_orig_image = false;
@@ -430,10 +426,19 @@ int main(int argc, char **argv)
         }
     }
 
-    // for (ros::master::V_TopicInfo::iterator it = master_topics.begin(); it != master_topics.end(); it++)
+    // // Simulate adding frames with AOIs
+    // frame_AOI_info frame1 = {{{cv::Point(10, 10), cv::Point(50, 50)}}, {{cv::Point(10, 10), cv::Point(50, 50)}, {cv::Point(60, 60), cv::Point(100, 100)}}};
+    // frame_AOI_info frame2 = {{{cv::Point(12, 12), cv::Point(52, 52)}}, {{cv::Point(12, 12), cv::Point(52, 52)}, {cv::Point(62, 62), cv::Point(102, 102)}}};
+
+    // tracker.addFrame(frame1);
+    // tracker.addFrame(frame2);
+
+    // // Get and print tracked AOIs for the current frame
+    // auto trackedAOIs = tracker.getCurrentTrackedAOIs();
+    // for (const auto &aoi : trackedAOIs)
     // {
-    //     const ros::master::TopicInfo &info = *it;
-    //     std::cout << "topic_" << it - master_topics.begin() << ": " << info.name << std::endl;
+    //     std::cout << "Tracked AOI ID: " << aoi.id << ", BBox: (" << aoi.bbox.first.x << ", " << aoi.bbox.first.y << ") - ("
+    //               << aoi.bbox.second.x << ", " << aoi.bbox.second.y << "), Confidence: " << aoi.confidence << std::endl;
     // }
 
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig> server;

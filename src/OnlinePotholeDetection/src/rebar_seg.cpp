@@ -1,12 +1,4 @@
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <ros/ros.h>
 #include <rebar_seg.h>
-#include <iostream>
-#include <vector>
-#include <cmath>
-#include <numeric>
-#include <random>
 
 std::pair<double, double> find_rotation(cv::Mat &image, bool debug_level)
 {
@@ -289,15 +281,17 @@ frame_AOI_info find_area_of_interest(const std::string &name, const cv::Mat &lab
     int WIDTH = gray_orig.cols;
     int HEIGHT = gray_orig.rows;
 
-    std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_skeleton;
-    std::vector<std::pair<cv::Point, cv::Point>> bboxs_skeleton;
+    // std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_skeleton;
+    // std::vector<std::pair<cv::Point, cv::Point>> bboxs_skeleton;
 
-    std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_orig;
+    // std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_orig;
     std::vector<std::pair<cv::Point, cv::Point>> bboxs_orig;
 
     // Vector to store the pairs
     std::vector<std::pair<int, int>> clusterPairs;
     std::vector<std::pair<cv::Point, cv::Point>> closestPixels;
+
+    frame_AOI_info frame_aoi;
 
     cv::Mat damaged_area_orig_size;
     damaged_area_orig_size = cv::Mat::zeros(gray_orig.size(), CV_8U);
@@ -349,8 +343,8 @@ frame_AOI_info find_area_of_interest(const std::string &name, const cv::Mat &lab
                     gray_orig(rect).copyTo(damaged_area);
                     damaged_area.copyTo(damaged_area_orig_size(cv::Rect(x1, y1, damaged_area.cols, damaged_area.rows)));
 
-                    closest_pixels_skeleton.push_back(closest_pixel_pair);
-                    bboxs_skeleton.push_back(std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2)));
+                    // closest_pixels_skeleton.push_back(closest_pixel_pair);
+                    // bboxs_skeleton.push_back(std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2)));
                 }
 
                 // Find connected components
@@ -369,7 +363,7 @@ frame_AOI_info find_area_of_interest(const std::string &name, const cv::Mat &lab
                 if (num_components < 2)
                 {
                     std::cerr << "Not enough clusters to pair." << std::endl;
-                    return frame_AOI_info{closest_pixels_orig, bboxs_orig};
+                    return frame_aoi;
                 }
 
                 std::vector<bool> paired(num_components, false);
@@ -452,8 +446,13 @@ frame_AOI_info find_area_of_interest(const std::string &name, const cv::Mat &lab
                     }
 
                     // Save the closest pixels
-                    closestPixels.push_back(std::make_pair(closestPixel1, closestPixel2));
-                    bboxs_orig.push_back(std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2)));
+                    // closestPixels.push_back(std::make_pair(closestPixel1, closestPixel2));
+                    // bboxs_orig.push_back(std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2)));
+                    AOI aoi;
+                    aoi.closest_pixels_pair = std::make_pair(closestPixel1, closestPixel2);
+                    aoi.bbox = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
+                    aoi.id = -1;
+                    frame_aoi.aoiList.push_back(aoi);
                 }
 
                 if (debug_level)
@@ -498,7 +497,7 @@ frame_AOI_info find_area_of_interest(const std::string &name, const cv::Mat &lab
         }
     }
 
-    return frame_AOI_info{closestPixels, bboxs_orig};
+    return frame_aoi;
 }
 
 cv::Point3f pixel_to_camera(int u, int v, float Z, const cv::Mat &K_inv)
@@ -515,7 +514,6 @@ void plot_camera_coordinates(const std::vector<std::vector<cv::Point3f>> &camera
 }
 
 // Function that calculates and returns 3d coordinates of the white pixels in the image
-
 std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat &img, const cv::Mat &depth_image, const cv::Mat &labels, double Z)
 {
 
