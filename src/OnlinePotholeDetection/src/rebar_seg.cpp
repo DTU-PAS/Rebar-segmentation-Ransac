@@ -234,13 +234,13 @@ cv::Vec3b random_color()
     return cv::Vec3b(dis(gen), dis(gen), dis(gen));
 }
 
-cluster_info cluster_skeleton(const std::string &name, const cv::Mat &skeleton, bool debug_level)
+cluster_info cluster(const std::string &name, const cv::Mat &img, bool debug_level)
 {
-    int height = skeleton.rows;
-    int width = skeleton.cols;
+    int height = img.rows;
+    int width = img.cols;
 
     cv::Mat labels, stats, centroids;
-    int num_labels = cv::connectedComponentsWithStats(skeleton, labels, stats, centroids, 8);
+    int num_labels = cv::connectedComponentsWithStats(img, labels, stats, centroids, 8);
 
     cv::Mat cluster_img(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
 
@@ -254,7 +254,7 @@ cluster_info cluster_skeleton(const std::string &name, const cv::Mat &skeleton, 
     {
         for (int x = 0; x < width; ++x)
         {
-            if (skeleton.at<uchar>(y, x) == 255)
+            if (img.at<uchar>(y, x) == 255)
             {
                 cluster_img.at<cv::Vec3b>(y, x) = colors[labels.at<int>(y, x)];
             }
@@ -276,8 +276,12 @@ int clamp(int value, int min_val, int max_val)
     return std::max(min_val, std::min(value, max_val));
 }
 
-std::tuple<std::vector<std::pair<cv::Point, cv::Point>>, std::vector<std::pair<cv::Point, cv::Point>>>
-find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_labels, const cv::Mat &gray_orig, const cv::Mat &img, bool debug_level = 0)
+double euclideanDistance(cv::Point2d pt1, cv::Point2d pt2)
+{
+    return std::sqrt((pt1.x - pt2.x) * (pt1.x - pt2.x) + (pt1.y - pt2.y) * (pt1.y - pt2.y));
+}
+
+frame_AOI_info find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_labels, const cv::Mat &gray_orig, const cv::Mat &img, bool debug_level = 0)
 {
     // int WIDTH = gray_orig.cols;
     // int HEIGHT = gray_orig.rows;
@@ -291,20 +295,14 @@ find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_la
     std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_orig;
     std::vector<std::pair<cv::Point, cv::Point>> bboxs_orig;
 
-    // // Show the input labels
-    // if (debug_level)
-    // {
-    //     cv::Mat label_image = cv::Mat::zeros(gray_orig.size(), CV_8U);
-    //     for (int i = 1; i <= num_labels; ++i)
-    //     {
-    //         label_image.setTo(255, labels == i);
-    //     }
-    //     cv::imshow(name + " label", label_image);
-    //     cv::waitKey(1);
-    // }
+    // Vector to store the pairs
+    std::vector<std::pair<int, int>> clusterPairs;
+    std::vector<std::pair<cv::Point, cv::Point>> closestPixels;
 
     cv::Mat damaged_area_orig_size;
     damaged_area_orig_size = cv::Mat::zeros(gray_orig.size(), CV_8U);
+
+    cv::Mat clustered_image;
 
     // // Find the closest pixel between the vertical clusters
     for (int i = 1; i <= num_labels; ++i)
@@ -332,9 +330,6 @@ find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_la
 
             if (min_distance < 100)
             {
-                // ROS_INFO("Closest pixel distance: %f", min_distance);
-                // Visualize the damaged area in the original image
-                // Draw a bounding box around the damaged area
                 // Make the bounding box bigger by 10 pixels in each direction
                 cv::Point pt1 = closest_pixel_pair.first, pt2 = closest_pixel_pair.second;
                 int x1 = clamp(pt1.x - 10, 0, WIDTH - 1);
@@ -348,9 +343,7 @@ find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_la
 
                 cv::Mat damaged_area = cv::Mat::zeros(rect.size(), gray_orig.type());
 
-                // cv::Mat damaged_area = cv::Mat::zeros(gray_orig.size(), CV_8U);
                 // Extract the damaged area from the original image
-                // if (rect_width > 0 && rect_height > 0)
                 if (x1 < x2 && y1 < y2)
                 {
                     gray_orig(rect).copyTo(damaged_area);
@@ -358,90 +351,212 @@ find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_la
 
                     closest_pixels_skeleton.push_back(closest_pixel_pair);
                     bboxs_skeleton.push_back(std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2)));
-                    // cv::imshow("Damaged area " + name, damaged_area_orig_size);
-                    // cv::waitKey(1);
                 }
-                else
-                {
-                    // std::cerr << "Invalid rectangle dimensions: (" << x1 << ", " << y1 << ") to (" << x2 << ", " << y2 << ")" << std::endl;
-                    //std::cerr << std::endl;
-                }
-
-                // SHOw the damaged area
-                // if (debug_level)
-                // {
-                // }
-
-                // Insert the damaged area into the original image in the correct location
 
                 // Find connected components
-                cv::Mat labels_damaged, stats, centroids;
-                int num_components = cv::connectedComponentsWithStats(damaged_area_orig_size, labels_damaged, stats, centroids, 8);
-                // cluster_info clustering = cluster_skeleton("Vertical", damaged_area_orig_size, 1);
+                // cv::Mat labels_damaged, stats, centroids;
+                // int num_components = cv::connectedComponentsWithStats(damaged_area_orig_size, labels_damaged, stats, centroids, 8);
 
-                // int num_components = clustering.num_clusters;
-                // cv::Mat labels_damaged = clustering.labels;
-                int height = damaged_area_orig_size.rows;
-                int width = damaged_area_orig_size.cols;
-                cv::Mat cluster_img(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
+                cluster_info result = cluster(name, damaged_area_orig_size, 0);
 
-                std::vector<cv::Vec3b> colors(num_components);
-                for (int i = 0; i < num_components; ++i)
+                clustered_image = result.img;
+
+                cv::Mat labels_damaged = result.labels;
+                int num_components = result.num_clusters + 1;
+                cv::Mat centroids = result.centroids;
+
+                // pair clusters based on the distance of their centroids
+                if (num_components < 2)
                 {
-                    colors[i] = random_color();
+                    std::cerr << "Not enough clusters to pair." << std::endl;
+                    return frame_AOI_info{closest_pixels_orig, bboxs_orig};
                 }
 
-                for (int y = 0; y < height; ++y)
+                std::vector<bool> paired(num_components, false);
+
+                // Function to find all pixels belonging to a cluster
+                auto getClusterPixels = [&](int label)
                 {
-                    for (int x = 0; x < width; ++x)
+                    std::vector<cv::Point> pixels;
+                    for (int y = 0; y < labels_damaged.rows; ++y)
                     {
-                        if (damaged_area_orig_size.at<uchar>(y, x) == 255)
+                        for (int x = 0; x < labels_damaged.cols; ++x)
                         {
-                            cluster_img.at<cv::Vec3b>(y, x) = colors[labels_damaged.at<int>(y, x)];
-                        }
-                    }
-                }
-
-                // Find closest pixels between clusters within the damaged area
-                for (int k = 1; k < num_components; ++k)
-                {
-                    for (int l = k + 1; l < num_components; ++l)
-                    {
-                        cv::Mat cluster1_damaged, cluster2_damaged;
-                        cv::findNonZero(labels_damaged == k, cluster1_damaged);
-                        cv::findNonZero(labels_damaged == l, cluster2_damaged);
-
-                        double min_distance_inner = 1000;
-                        std::pair<cv::Point, cv::Point> closest_pixel_pair_inner;
-
-                        for (cv::MatIterator_<cv::Point> it1 = cluster1_damaged.begin<cv::Point>(), end1 = cluster1_damaged.end<cv::Point>(); it1 != end1; ++it1)
-                        {
-                            for (cv::MatIterator_<cv::Point> it2 = cluster2_damaged.begin<cv::Point>(), end2 = cluster2_damaged.end<cv::Point>(); it2 != end2; ++it2)
+                            if (labels_damaged.at<int>(y, x) == label)
                             {
-                                double distance_inner = cv::norm(*it1 - *it2);
-                                if (distance_inner < min_distance_inner)
-                                {
-                                    min_distance_inner = distance_inner;
-                                    closest_pixel_pair_inner = std::make_pair(*it1, *it2);
-                                }
-                            }
-                        }
-
-                        if (closest_pixel_pair_inner.first != cv::Point() && closest_pixel_pair_inner.second != cv::Point())
-                        {
-                            if (min_distance_inner < 100)
-                            {
-                                double distance = cv::norm(closest_pixel_pair_inner.first - closest_pixel_pair_inner.second);
-                                //ROS_INFO("Closest pixel distance inner: %f", distance);
-                                closest_pixels_orig.push_back(closest_pixel_pair_inner);
-                                bboxs_orig.push_back(std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2)));
+                                pixels.push_back(cv::Point(x, y));
                             }
                         }
                     }
+                    return pixels;
+                };
+
+                // Pair clusters until one is left
+                while (true)
+                {
+                    double closestDistance = std::numeric_limits<double>::max();
+                    int closestIdx1 = -1;
+                    int closestIdx2 = -1;
+
+                    // Find the closest pair of unpaired clusters
+                    for (int i = 1; i < num_components; ++i)
+                    {
+                        if (paired[i])
+                            continue;
+                        for (int j = i + 1; j < num_components; ++j)
+                        {
+                            if (paired[j])
+                                continue;
+
+                            cv::Point2d pt1(centroids.at<double>(i, 0), centroids.at<double>(i, 1));
+                            cv::Point2d pt2(centroids.at<double>(j, 0), centroids.at<double>(j, 1));
+                            double distance = euclideanDistance(pt1, pt2);
+
+                            if (distance < closestDistance)
+                            {
+                                closestDistance = distance;
+                                closestIdx1 = i;
+                                closestIdx2 = j;
+                            }
+                        }
+                    }
+
+                    // If there are no more pairs to make, break the loop
+                    if (closestIdx1 == -1 || closestIdx2 == -1)
+                        break;
+
+                    // Pair the closest clusters
+                    paired[closestIdx1] = true;
+                    paired[closestIdx2] = true;
+                    clusterPairs.push_back(std::make_pair(closestIdx1, closestIdx2));
+
+                    // Get pixels for each cluster
+                    std::vector<cv::Point> pixels1 = getClusterPixels(closestIdx1);
+                    std::vector<cv::Point> pixels2 = getClusterPixels(closestIdx2);
+
+                    // Find the closest pixels between the two clusters
+                    double minPixelDistance = std::numeric_limits<double>::max();
+                    cv::Point closestPixel1, closestPixel2;
+                    for (const auto &p1 : pixels1)
+                    {
+                        for (const auto &p2 : pixels2)
+                        {
+                            double pixelDistance = euclideanDistance(p1, p2);
+                            if (pixelDistance < minPixelDistance)
+                            {
+                                minPixelDistance = pixelDistance;
+                                closestPixel1 = p1;
+                                closestPixel2 = p2;
+                            }
+                        }
+                    }
+
+                    // Save the closest pixels
+                    closestPixels.push_back(std::make_pair(closestPixel1, closestPixel2));
+                    bboxs_orig.push_back(std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2)));
+                }
+
+                if (debug_level)
+                {
+                    // print text onto the image with cluster id
+                    for (int i = 1; i < num_components; ++i)
+                    {
+                        cv::putText(clustered_image, std::to_string(i), cv::Point(centroids.at<double>(i, 0), centroids.at<double>(i, 1)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 2);
+                    }
+
+                    // Find the unpaired cluster
+                    int unpairedCluster = -1;
+                    for (int i = 1; i < num_components; ++i)
+                    {
+                        if (!paired[i])
+                        {
+                            unpairedCluster = i;
+                            break;
+                        }
+                    }
+
+                    // Output the pairs and their closest pixels
+                    for (size_t i = 0; i < clusterPairs.size(); ++i)
+                    {
+                        const auto &pair = clusterPairs[i];
+                        const auto &pixels = closestPixels[i];
+                        std::cout << name << " Cluster " << pair.first << " is paired with Cluster " << pair.second << std::endl;
+                        std::cout << name << " Closest pixels: (" << pixels.first.x << ", " << pixels.first.y << ") and ("
+                                  << pixels.second.x << ", " << pixels.second.y << ")" << std::endl;
+                    }
+
+                    // Output the unpaired cluster
+                    if (unpairedCluster != -1)
+                    {
+                        std::cout << name << " Unpaired Cluster: " << unpairedCluster << std::endl;
+                    }
+                    cv::imshow("Clustered2 " + name, clustered_image);
+                    cv::waitKey(0);
+                    std::cout << std::endl;
                 }
             }
         }
     }
 
-    return std::make_tuple(closest_pixels_orig, bboxs_orig);
+    return frame_AOI_info{closestPixels, bboxs_orig};
+}
+
+cv::Point3f pixel_to_camera(int u, int v, float Z, const cv::Mat &K_inv)
+{
+    cv::Mat pixel_coords = (cv::Mat_<double>(3, 1) << u, v, 1);
+    cv::Mat camera_coords = K_inv * pixel_coords * Z;
+    return cv::Point3f(camera_coords.at<double>(0, 0), camera_coords.at<double>(1, 0), camera_coords.at<double>(2, 0));
+}
+
+// Function to plot camera coordinates (placeholder, implement as needed)
+void plot_camera_coordinates(const std::vector<std::vector<cv::Point3f>> &camera_cluster_coordinates, int param)
+{
+    // Implement your plotting logic here
+}
+
+// Function that calculates and returns 3d coordinates of the white pixels in the image
+
+std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat &img, const cv::Mat &depth_image, const cv::Mat &labels, double Z)
+{
+
+    cv::Mat K = (cv::Mat_<double>(3, 3) << 465.33203125, 0, 353.9921875, 0, 465.33203125, 251.28125, 0, 0, 1);
+    cv::Mat K_inv = K.inv();
+
+    // cv::Mat img;         // Load your image here
+    // cv::Mat depth_image; // Load your depth image here
+
+    std::vector<cv::Point> white_pixels;
+    cv::findNonZero(img == 255, white_pixels);
+
+    std::vector<std::vector<cv::Point>> pixel_coordinates;
+
+    // cv::Mat labels;   // Load your vertical labels here
+
+    int max_labels = *std::max_element(labels.begin<int>(), labels.end<int>());
+
+    for (int i = 1; i <= max_labels; ++i)
+    {
+        std::vector<cv::Point> cluster;
+        cv::findNonZero(labels == i, cluster);
+        pixel_coordinates.push_back(cluster);
+    }
+
+    std::vector<std::vector<cv::Point3f>> camera_cluster_coordinates;
+
+    for (const auto &cluster : pixel_coordinates)
+    {
+        std::vector<cv::Point3f> camera_coordinates;
+        for (const auto &pt : cluster)
+        {
+            int v = pt.y, u = pt.x;
+            float Z = depth_image.at<uint16_t>(v, u) * 0.001f;
+            ROS_INFO("Depth: %f", Z);
+            camera_coordinates.push_back(pixel_to_camera(u, v, Z, K_inv));
+        }
+        camera_cluster_coordinates.push_back(camera_coordinates);
+    }
+
+    // plot_camera_coordinates(camera_cluster_coordinates, 0);
+
+    return camera_cluster_coordinates;
 }

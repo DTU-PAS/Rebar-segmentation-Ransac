@@ -574,18 +574,18 @@ class ImageSubscriber:
             # From the corresponding depth image use the depth value to calculate the camera coordinates
             # of the rebar pixels
             
-            # K = np.array([[92.76239013671875, 0, 321.00030517578125],    # fx, 0, cx
-            #         [0, 392.76239013671875, 246.15286254882812],    # 0, fy, cy
-            #         [0, 0, 1]])                                     # 0, 0, 1
+            K = np.array([[92.76239013671875, 0, 321.00030517578125],    # fx, 0, cx
+                    [0, 392.76239013671875, 246.15286254882812],    # 0, fy, cy
+                    [0, 0, 1]])                                     # 0, 0, 1
 
-            # K = np.array([[465.33203125, 0, 353.9921875],    # fx, 0, cx
-            #         [0, 465.33203125, 251.28125],    # 0, fy, cy
-            #         [0, 0, 1]])                                     # 0, 0, 1
+            K = np.array([[465.33203125, 0, 353.9921875],    # fx, 0, cx
+                    [0, 465.33203125, 251.28125],    # 0, fy, cy
+                    [0, 0, 1]])                                     # 0, 0, 1
 
-            # # Inverse of the camera matrix
-            # K_inv = np.linalg.inv(K)
+            # Inverse of the camera matrix
+            K_inv = np.linalg.inv(K)
 
-            # print("Closest pixel", closest_pixel)
+            print("Closest pixel", closest_pixel)
 
             # Z = self.depth_image[closest_pixel[0][0], closest_pixel[0][1]] * 0.001
             # print("Depth value of the closest pixel", Z)
@@ -601,42 +601,42 @@ class ImageSubscriber:
 
             # print("Calculated distance between the closest pixels", calculated_distance)
 
-            # white_pixels = np.column_stack(np.where(skeleton == 255))
+            white_pixels = np.column_stack(np.where(img == 255))
 
             # get a list of pixelcoordinates from each cluster
-            # vertical_pixel_coordinates = []
-            # horizontal_pixel_coordinates = []
-            # for i in range(1, np.max(vertical_labels)+1):
-            #     vertical_pixel_coordinates.append(np.column_stack(np.where(vertical_labels == i)))
-            # for i in range(1, np.max(horizontal_labels)+1):
-            #     horizontal_pixel_coordinates.append(np.column_stack(np.where(horizontal_labels == i)))
+            vertical_pixel_coordinates = []
+            horizontal_pixel_coordinates = []
+            for i in range(1, np.max(vertical_labels)+1):
+                vertical_pixel_coordinates.append(np.column_stack(np.where(vertical_labels == i)))
+            for i in range(1, np.max(horizontal_labels)+1):
+                horizontal_pixel_coordinates.append(np.column_stack(np.where(horizontal_labels == i)))
 
-            # camera_cluster_coordinates = []
+            camera_cluster_coordinates = []
 
-            # for cluster in vertical_pixel_coordinates:
-            #     camera_coordinates = []
-            #     for (v, u) in cluster: 
-            #         Z = self.depth_image[v, u] * 0.001
-            #         # if Z == 0:
-            #         #     # Take the average of the surrounding pixels
-            #         #     Z = np.max([self.depth_image[v-1, u], self.depth_image[v+1, u], self.depth_image[v, u-1], self.depth_image[v, u+1]]) * 0.001
+            for cluster in vertical_pixel_coordinates:
+                camera_coordinates = []
+                for (v, u) in cluster: 
+                    Z = self.depth_image[v, u] * 0.001
+                    # if Z == 0:
+                    #     # Take the average of the surrounding pixels
+                    #     Z = np.max([self.depth_image[v-1, u], self.depth_image[v+1, u], self.depth_image[v, u-1], self.depth_image[v, u+1]]) * 0.001
         
-            #         camera_coords = pixel_to_camera(u, v, Z, K_inv)
-            #         camera_coordinates.append(camera_coords)
-            #     camera_cluster_coordinates.append(camera_coordinates)
+                    camera_coords = pixel_to_camera(u, v, Z, K_inv)
+                    camera_coordinates.append(camera_coords)
+                camera_cluster_coordinates.append(camera_coordinates)
 
-            # for cluster in horizontal_pixel_coordinates:
-            #     camera_coordinates = []
-            #     for (v, u) in cluster: 
-            #         Z = self.depth_image[v, u] * 0.001
-            #         if Z == 0:
-            #             # Move one pixel over to the right
-            #             Z = np.max([self.depth_image[v-1, u], self.depth_image[v+1, u], self.depth_image[v, u-1], self.depth_image[v, u+1]]) * 0.001
-            #         camera_coords = pixel_to_camera(u, v, Z, K_inv)
-            #         camera_coordinates.append(camera_coords)
-            #     camera_cluster_coordinates.append(camera_coordinates)
+            for cluster in horizontal_pixel_coordinates:
+                camera_coordinates = []
+                for (v, u) in cluster: 
+                    Z = self.depth_image[v, u] * 0.001
+                    if Z == 0:
+                        # Move one pixel over to the right
+                        Z = np.max([self.depth_image[v-1, u], self.depth_image[v+1, u], self.depth_image[v, u-1], self.depth_image[v, u+1]]) * 0.001
+                    camera_coords = pixel_to_camera(u, v, Z, K_inv)
+                    camera_coordinates.append(camera_coords)
+                camera_cluster_coordinates.append(camera_coordinates)
 
-            # plot_camera_coordinates(camera_cluster_coordinates, 0)
+            plot_camera_coordinates(camera_cluster_coordinates, 0)
             
             image = np.zeros((HEIGHT, WIDTH, 3), dtype=np.uint8)
         self.count += 1

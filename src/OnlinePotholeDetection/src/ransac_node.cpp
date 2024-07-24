@@ -28,6 +28,10 @@
 // Custom code
 #include <rebar_seg.h>
 
+bool aligned_depth = false;
+
+// std::vector<tracked_AOI_info> tracked_AOIs;
+
 class RansacNode
 {
 public:
@@ -40,6 +44,8 @@ public:
         pointcloud_sub = nh.subscribe("/camera/depth/color/points", 1, &RansacNode::pointcloud_callback, this);
         camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
         // camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
+        // rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
+        // depth_sub = nh.subscribe("/camera/depth/image_rect_raw", 1, &RansacNode::depth_callback, this);
     }
 
     void pointcloud_callback(const sensor_msgs::PointCloud2ConstPtr &input)
@@ -140,6 +146,37 @@ public:
         // ROS_INFO("  cy: %f", cy);
     }
 
+    void rgb_callback(const sensor_msgs::ImageConstPtr &rgb_msg)
+    {
+        cv_bridge::CvImagePtr cv_ptr;
+        try
+        {
+            cv_ptr = cv_bridge::toCvCopy(rgb_msg, sensor_msgs::image_encodings::BGR8);
+            rgb_image = cv_ptr->image;
+        }
+        catch (cv_bridge::Exception &e)
+        {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+    }
+
+    void depth_callback(const sensor_msgs::ImageConstPtr &depth_msg)
+    {
+        cv_bridge::CvImagePtr cv_ptr;
+        try
+        {
+            cv_ptr = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1);
+            cv::Mat depth_image = cv_ptr->image;
+            // ROS_INFO("Depth image: %i, %i", depth_image.rows, depth_image.cols);
+        }
+        catch (cv_bridge::Exception &e)
+        {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+    }
+
     void project_2D(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
     {
         // Project points to image plane
@@ -174,7 +211,6 @@ public:
                 image_msg->data[pixel_idx + 2] = 255;
             }
         }
-        // Show the image
 
         cv::Mat img(img_height, img_width, CV_8UC3, image_msg->data.data());
 
@@ -185,10 +221,18 @@ public:
         }
 
         cv::Mat gray_orig;
-        //gray_orig = img.clone();
-        // Convert the image to grayscale
-        // ROS_INFO("Converting image to grayscale");
+        //  Convert the image to grayscale
         cv::cvtColor(img, gray_orig, cv::COLOR_RGB2GRAY);
+
+        if (!aligned_depth)
+        {
+            // Dialate image to remove small holes
+            cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+            cv::dilate(gray_orig, gray_orig, kernel);
+
+            // Erode image to remove small blobs
+            cv::erode(gray_orig, gray_orig, kernel);
+        }
 
         // Cluster the image and remove small clusters
         cv::Mat labels, stats, centroids;
@@ -203,7 +247,6 @@ public:
                 img.setTo(cv::Scalar(0, 0, 0), mask);
             }
         }
-
         float vertical_angle, horizontal_angle;
 
         // ROS_INFO("Finding rotation");
@@ -250,11 +293,8 @@ public:
         cv::ximgproc::thinning(thresholded_image_horizontal, horizontal);
 
         // ROS_INFO("Clustering vertical and horizontal skeletons");
-        cluster_info result_clustering_vertical = cluster_skeleton("Vertical", vertical, show_clusters);
-        cluster_info result_clustering_horizontal = cluster_skeleton("Horizontal", horizontal, show_clusters);
-
-        cv::Mat vertical_clustered = result_clustering_vertical.img;
-        cv::Mat horizontal_clustered = result_clustering_horizontal.img;
+        cluster_info result_clustering_vertical = cluster("Vertical", vertical, show_clusters);
+        cluster_info result_clustering_horizontal = cluster("Horizontal", horizontal, show_clusters);
 
         cv::Mat vertical_labels = result_clustering_vertical.labels;
         cv::Mat horizontal_labels = result_clustering_horizontal.labels;
@@ -271,44 +311,37 @@ public:
         auto result_vertical = find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, img, show_roi);
         auto result_horizontal = find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, img, show_roi);
 
-        // Extract results
-        std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_vertical = std::get<0>(result_vertical);
-        std::vector<std::pair<cv::Point, cv::Point>> bboxs_vertical = std::get<1>(result_vertical);
+        std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_vertical = result_vertical.closest_pixels;
+        std::vector<std::pair<cv::Point, cv::Point>> bboxs_vertical = result_vertical.bboxs;
 
-        std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_horizontal = std::get<0>(result_horizontal);
-        std::vector<std::pair<cv::Point, cv::Point>> bboxs_horizontal = std::get<1>(result_horizontal);
+        std::vector<std::pair<cv::Point, cv::Point>> closest_pixels_horizontal = result_horizontal.closest_pixels;
+        std::vector<std::pair<cv::Point, cv::Point>> bboxs_horizontal = result_horizontal.bboxs;
 
-        // Draw bboxs on the image
-        if (show_final_image)
+        for (size_t i = 0; i < bboxs_vertical.size(); ++i)
         {
-            for (size_t i = 0; i < bboxs_vertical.size(); ++i)
-            {
-                cv::rectangle(img, bboxs_vertical[i].first, bboxs_vertical[i].second, cv::Scalar(0, 255, 0), 2);
-            }
-            for (size_t i = 0; i < bboxs_horizontal.size(); ++i)
-            {
-                cv::rectangle(img, bboxs_horizontal[i].first, bboxs_horizontal[i].second, cv::Scalar(0, 255, 255), 2);
-            }
-
-            // Draw a line between the closest pixels
-            for (size_t i = 0; i < closest_pixels_vertical.size(); ++i)
-            {
-                //ROS_INFO("Vertical: (%i, %i) - (%i, %i)", closest_pixels_vertical[i].first.x, closest_pixels_vertical[i].first.y, closest_pixels_vertical[i].second.x, closest_pixels_vertical[i].second.y);
-                cv::line(img, closest_pixels_vertical[i].first, closest_pixels_vertical[i].second, cv::Scalar(0, 0, 255), 2);
-            }
-            for (size_t i = 0; i < closest_pixels_horizontal.size(); ++i)
-            {
-                //ROS_INFO("Horizontal: (%i, %i) - (%i, %i)", closest_pixels_horizontal[i].first.x, closest_pixels_horizontal[i].first.y, closest_pixels_horizontal[i].second.x, closest_pixels_horizontal[i].second.y);
-                cv::line(img, closest_pixels_horizontal[i].first, closest_pixels_horizontal[i].second, cv::Scalar(255, 0, 0), 2);
-            }
-            
-            // std::cout << std::endl;
-
-            // Show the image
-            cv::namedWindow("Projected_Image");
-            cv::imshow("Projected_Image", img);
-            cv::waitKey(1);
+            cv::rectangle(img, bboxs_vertical[i].first, bboxs_vertical[i].second, cv::Scalar(0, 255, 0), 2);
         }
+        for (size_t i = 0; i < bboxs_horizontal.size(); ++i)
+        {
+            cv::rectangle(img, bboxs_horizontal[i].first, bboxs_horizontal[i].second, cv::Scalar(0, 255, 255), 2);
+        }
+
+        for (size_t i = 0; i < closest_pixels_vertical.size(); ++i)
+        {
+            // const auto &pair = clusterPairs[i];
+            const auto &pixels = closest_pixels_vertical[i];
+            cv::line(img, pixels.first, pixels.second, cv::Scalar(0, 0, 255), 2);
+        }
+        for (size_t i = 0; i < closest_pixels_horizontal.size(); ++i)
+        {
+            // const auto &pair = clusterPairs[i];
+            const auto &pixels = closest_pixels_horizontal[i];
+            cv::line(img, pixels.first, pixels.second, cv::Scalar(255, 0, 0), 2);
+        }
+
+        cv::imshow("Projected_Image", img);
+        cv::waitKey(1);
+        // }
 
         if (image_msg->data.size() != img_height * img_width * 3)
             ROS_ERROR("data size: %lu (should be: %i)", image_msg->data.size(), img_height * img_width * 3);
@@ -316,7 +349,7 @@ public:
         label_pub.publish(image_msg);
     }
 
-    void callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
+    void dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
     {
         // ROS_INFO("New values: [%d] - [%s]", config.int_param, config.str_param.c_str());
         ransac_threshold = config.ransac_threshold / (double)1000;
@@ -349,7 +382,12 @@ private:
     ros::Publisher label_pub;
     ros::Subscriber pointcloud_sub;
     ros::Subscriber camera_info_sub;
+    ros::Subscriber rgb_sub;
+    ros::Subscriber depth_sub;
     ros::NodeHandle nh;
+
+    cv::Mat rgb_image;
+    cv::Mat depth_image;
 
     // Flags for showing images
     bool show_orig_image = false;
@@ -368,7 +406,7 @@ private:
 // void callback_wrapper()
 // {
 //     //ROS_INFO("Callback wrapper");
-//     callback_object -> callback();
+//     callback_object -> dynamic_reconfigure_callback();
 // }
 
 int main(int argc, char **argv)
@@ -377,10 +415,31 @@ int main(int argc, char **argv)
     RansacNode rn;
     // callback_object = &rn;
 
+    ros::master::V_TopicInfo master_topics;
+    ros::master::getTopics(master_topics);
+
+    // If topic aligned_depth_to_color/camera_info is available, use it set flag aligned_depth to true
+    for (ros::master::V_TopicInfo::iterator it = master_topics.begin(); it != master_topics.end(); it++)
+    {
+        const ros::master::TopicInfo &info = *it;
+        if (info.name == "/camera/aligned_depth_to_color/camera_info")
+        {
+            ROS_INFO("Aligned depth to color camera info topic found");
+            aligned_depth = true;
+            break;
+        }
+    }
+
+    // for (ros::master::V_TopicInfo::iterator it = master_topics.begin(); it != master_topics.end(); it++)
+    // {
+    //     const ros::master::TopicInfo &info = *it;
+    //     std::cout << "topic_" << it - master_topics.begin() << ": " << info.name << std::endl;
+    // }
+
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig> server;
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig>::CallbackType f;
 
-    f = boost::bind(&RansacNode::callback, &rn, _1, _2);
+    f = boost::bind(&RansacNode::dynamic_reconfigure_callback, &rn, _1, _2);
     server.setCallback(f);
 
     ros::spin();
