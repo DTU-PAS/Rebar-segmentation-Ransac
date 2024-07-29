@@ -46,7 +46,7 @@ public:
         // rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
         // depth_sub = nh.subscribe("/camera/depth/image_rect_raw", 1, &RansacNode::depth_callback, this);
 
-        tracker.initialize(5);
+        // tracker.initialize(5);
     }
 
     void pointcloud_callback(const sensor_msgs::PointCloud2ConstPtr &input)
@@ -258,7 +258,7 @@ public:
             {
                 cv::Mat mask = labels == i;
                 gray_orig.setTo(0, mask);
-                img.setTo(cv::Scalar(0, 0, 0), mask);
+                img_small_blobs_removed = img.setTo(cv::Scalar(0, 0, 0), mask);
             }
         }
         float vertical_angle, horizontal_angle;
@@ -309,37 +309,55 @@ public:
         auto result_vertical = find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, img, show_roi);
         auto result_horizontal = find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, img, show_roi);
 
-        for (size_t i = 0; i < result_vertical.aoiList.size(); ++i)
-        {
-            const auto &pixels = result_vertical.aoiList[i].closest_pixels_pair;
-            cv::line(img, pixels.first, pixels.second, cv::Scalar(0, 0, 255), 2);
-            cv::rectangle(img, result_vertical.aoiList[i].bbox.first, result_vertical.aoiList[i].bbox.second, cv::Scalar(0, 255, 0), 2);
-        }
-        for (size_t i = 0; i < result_horizontal.aoiList.size(); ++i)
-        {
-            const auto &pixels = result_horizontal.aoiList[i].closest_pixels_pair;
-            cv::line(img, pixels.first, pixels.second, cv::Scalar(255, 0, 0), 2);
-            cv::rectangle(img, result_horizontal.aoiList[i].bbox.first, result_horizontal.aoiList[i].bbox.second, cv::Scalar(0, 255, 255), 2);
-        }
+        // for (size_t i = 0; i < result_vertical.aoiList.size(); ++i)
+        // {
+        //     const auto &pixels = result_vertical.aoiList[i].closest_pixels_pair;
+        //     cv::line(img, pixels.first, pixels.second, cv::Scalar(0, 0, 255), 2);
+        //     cv::rectangle(img, result_vertical.aoiList[i].bounding_box.first, result_vertical.aoiList[i].bounding_box.second, cv::Scalar(0, 255, 0), 2);
+        //     cv::putText(img, std::to_string(result_vertical.aoiList[i].id), cv::Point(result_vertical.aoiList[i].bounding_box.first.x - 10, result_vertical.aoiList[i].bounding_box.first.y), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(156, 0, 255), 2);
+        // }
+        // for (size_t i = 0; i < result_horizontal.aoiList.size(); ++i)
+        // {
+        //     const auto &pixels = result_horizontal.aoiList[i].closest_pixels_pair;
+        //     cv::line(img, pixels.first, pixels.second, cv::Scalar(255, 0, 0), 2);
+        //     cv::rectangle(img, result_horizontal.aoiList[i].bounding_box.first, result_horizontal.aoiList[i].bounding_box.second, cv::Scalar(0, 255, 255), 2);
+        //     cv::putText(img, std::to_string(result_horizontal.aoiList[i].id), cv::Point(result_horizontal.aoiList[i].bounding_box.first.x, result_horizontal.aoiList[i].bounding_box.first.y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 165), 2);
+        // }
 
-        tracker.addFrame(result_vertical);
-        tracker.addFrame(result_horizontal);
+        // tracker.addFrame(result_vertical);
+        // tracker.addFrame(result_horizontal);
 
-        calculate_confidence();
+        calculate_confidence("vertical", result_vertical, frames_vertical);
+        calculate_confidence("horizontal", result_horizontal, frames_horizontal);
 
-        cv::imshow("Projected_Image", img);
-        cv::waitKey(1);
+        // cv::imshow("Projected_Image", img);
+        // cv::waitKey(0);
     }
 
-    void calculate_confidence()
+    void calculate_confidence(const std::string &name, frame_AOI_info frame, std::vector<frame_AOI_info> &frames)
     {
-        // Get and print tracked AOIs for the current frame
-        auto trackedAOIs = tracker.getCurrentTrackedAOIs();
-        for (const auto &aoi : trackedAOIs)
+        int N = 10;                // Number of frames to consider for confidence score
+        float IoUThreshold = 0.8f; // IoU threshold for matching
+
+        // Simulate adding frames with AOI information
+
+        if (frames.size() == N)
         {
-            std::cout << "Tracked AOI ID: " << aoi.id << ", BBox: (" << aoi.bbox.first.x << ", " << aoi.bbox.first.y << ") - ("
-                      << aoi.bbox.second.x << ", " << aoi.bbox.second.y << "), Confidence: " << aoi.confidence << std::endl;
+            frames.erase(frames.begin());
         }
+        frames.push_back(frame);
+
+        // Match AOIs and compute confidence scores
+
+        matchAOIsAndComputeConfidence(name, frames, N, IoUThreshold, aoiHistories);
+
+        // for (const auto &frame : frames)
+        // {
+        drawAOIs(img_small_blobs_removed, frames[frames.size() -1], aoiHistories, N);
+        // }
+
+        cv::imshow("AOIs with Confidence and ID", img_small_blobs_removed);
+        cv::waitKey(0);
     }
 
     void dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
@@ -382,8 +400,13 @@ private:
     cv::Mat rgb_image;
     cv::Mat depth_image;
     cv::Mat main_img;
+    cv::Mat img_small_blobs_removed;
 
-    AOITracker tracker;
+    // AOITracker tracker;
+
+    std::vector<frame_AOI_info> frames_vertical;
+    std::vector<frame_AOI_info> frames_horizontal;
+    std::unordered_map<int, AOIHistory> aoiHistories;
 
     // Flags for showing images
     bool show_orig_image = false;
@@ -437,8 +460,8 @@ int main(int argc, char **argv)
     // auto trackedAOIs = tracker.getCurrentTrackedAOIs();
     // for (const auto &aoi : trackedAOIs)
     // {
-    //     std::cout << "Tracked AOI ID: " << aoi.id << ", BBox: (" << aoi.bbox.first.x << ", " << aoi.bbox.first.y << ") - ("
-    //               << aoi.bbox.second.x << ", " << aoi.bbox.second.y << "), Confidence: " << aoi.confidence << std::endl;
+    //     std::cout << "Tracked AOI ID: " << aoi.id << ", bounding_box: (" << aoi.bounding_box.first.x << ", " << aoi.bounding_box.first.y << ") - ("
+    //               << aoi.bounding_box.second.x << ", " << aoi.bounding_box.second.y << "), Confidence: " << aoi.confidence << std::endl;
     // }
 
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig> server;
