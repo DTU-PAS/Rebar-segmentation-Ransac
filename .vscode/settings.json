@@ -62,5 +62,14 @@
         "cinttypes": "cpp",
         "variant": "cpp",
         "bit": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/src/OnlinePotholeDetection",
+    "python.autoComplete.extraPaths": [
+        "/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
 }

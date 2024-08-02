@@ -1,6 +1,7 @@
 #ifndef AOI_TRACKER_H
 #define AOI_TRACKER_H
 
+#include <ros/ros.h>
 #include <opencv2/opencv.hpp>
 #include <deque>
 #include <vector>
@@ -8,6 +9,8 @@
 struct AOI
 {
     int id;                                              // AOI ID
+    int matchCount;                                      // Number of times this AOI has been matched
+    float confidence;                                    // Confidence of the AOI
     std::pair<cv::Point, cv::Point> closest_pixels_pair; // Closest pixels to the AOI
     std::pair<cv::Point, cv::Point> bounding_box;        // Bounding box defined by top-left and bottom-right points
 
@@ -44,11 +47,30 @@ struct AOI
 struct frame_AOI_info
 {
     std::vector<AOI> aoiList;
+    std::vector nr_of_new_AOIs;
 
     // Method to add an AOI to the list
     void addAOI(const AOI &aoi)
     {
+        // Check the length of the list
+        // Keep the list length to N
+        if (aoiList.size() >= 10)
+        {
+            aoiList.erase(aoiList.begin());
+        }
         aoiList.push_back(aoi);
+    }
+
+    void updateAOI(const AOI &aoi)
+    {
+        for (auto &aoi_ : aoiList)
+        {
+            if (aoi_.id == aoi.id)
+            {
+                aoi_ = aoi;
+                return;
+            }
+        }
     }
 
     // Method to serialize frame AOI info
@@ -69,9 +91,7 @@ struct frame_AOI_info
 
 struct AOIHistory
 {
-    int id;
-    int matches;
-    int frames_tracked;
+    frame_AOI_info frames_tracked;
 };
 
 float computeIoU(const AOI &a, const AOI &b);
@@ -79,10 +99,9 @@ float computeIoU(const AOI &a, const AOI &b);
 void matchAOIsAndComputeConfidence(const std::string &name,
                                    std::vector<frame_AOI_info> &frames,
                                    int N,
-                                   float IoUThreshold,
-                                   std::unordered_map<int, AOIHistory> &aoiHistories);
+                                   float IoUThreshold);
 
-void drawAOIs(cv::Mat &image, const frame_AOI_info &frame, const std::unordered_map<int, AOIHistory> &aoiHistories, int N);
+void drawAOIs(cv::Mat &image, const frame_AOI_info &frame, int N);
 
 // struct TrackedAOI
 // {

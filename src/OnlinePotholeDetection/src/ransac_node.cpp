@@ -27,7 +27,6 @@
 
 // Custom code
 #include <rebar_seg.h>
-#include <AOITracker.h>
 
 bool aligned_depth = false;
 
@@ -83,7 +82,8 @@ public:
         // If the dot product is less than or equal to 0, the point is kept
         // That means the point is on the side of the plane where the normal is pointing
 
-        std::vector<double> a{coefficients->values[0], coefficients->values[1], coefficients->values[2], coefficients->values[3]};
+        std::vector<double> a{
+            coefficients->values[0], coefficients->values[1], coefficients->values[2], coefficients->values[3]};
         double dot_product = 0;
         std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> kept_points;
         std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> non_kept_points;
@@ -279,21 +279,29 @@ public:
         cv::Mat pruned_vertical = resulting_split.first;
         cv::Mat pruned_horizontal = resulting_split.second;
 
-        cv::Mat reconstructed_vertical_skeleton = reconstruct_skeleton("Vertical", pruned_vertical, thinned_image, 3, 10, show_reconstructed_image);
-        cv::Mat reconstructed_horizontal_skeleton = reconstruct_skeleton("Horizontal", pruned_horizontal, thinned_image, 3, 10, show_reconstructed_image);
+        cv::Mat reconstructed_vertical_skeleton = reconstruct_skeleton("Vertical", pruned_vertical, thinned_image, 3,
+                                                                       10, show_reconstructed_image);
+        cv::Mat reconstructed_horizontal_skeleton = reconstruct_skeleton(
+            "Horizontal", pruned_horizontal, thinned_image, 3, 10, show_reconstructed_image);
 
-        cv::Mat clean_vertical = remove_small_blobs("Vertical", reconstructed_vertical_skeleton, 70, show_image_without_blobs);
-        cv::Mat clean_horizontal = remove_small_blobs("Horizontal", reconstructed_horizontal_skeleton, 70, show_image_without_blobs);
+        cv::Mat clean_vertical = remove_small_blobs("Vertical", reconstructed_vertical_skeleton, 70,
+                                                    show_image_without_blobs);
+        cv::Mat clean_horizontal = remove_small_blobs("Horizontal", reconstructed_horizontal_skeleton, 70,
+                                                      show_image_without_blobs);
 
-        cv::Mat back_rotated_image_vertical = rotate_image("Vertical - reverse rotation", clean_vertical, -angles.second, show_rotated_image);
+        cv::Mat back_rotated_image_vertical = rotate_image("Vertical - reverse rotation", clean_vertical,
+                                                           -angles.second, show_rotated_image);
         cv::Mat thresholded_image_vertical;
-        cv::threshold(back_rotated_image_vertical, thresholded_image_vertical, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        cv::threshold(back_rotated_image_vertical, thresholded_image_vertical, 0, 255,
+                      cv::THRESH_BINARY | cv::THRESH_OTSU);
         cv::Mat vertical;
         cv::ximgproc::thinning(thresholded_image_vertical, vertical);
 
-        cv::Mat back_rotated_image_horizontal = rotate_image("Horizontal - reverse rotation", clean_horizontal, -angles.second, show_rotated_image);
+        cv::Mat back_rotated_image_horizontal = rotate_image("Horizontal - reverse rotation", clean_horizontal,
+                                                             -angles.second, show_rotated_image);
         cv::Mat thresholded_image_horizontal;
-        cv::threshold(back_rotated_image_horizontal, thresholded_image_horizontal, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        cv::threshold(back_rotated_image_horizontal, thresholded_image_horizontal, 0, 255,
+                      cv::THRESH_BINARY | cv::THRESH_OTSU);
         cv::Mat horizontal;
         cv::ximgproc::thinning(thresholded_image_horizontal, horizontal);
 
@@ -306,58 +314,46 @@ public:
         int num_labels_vertical = result_clustering_vertical.num_clusters;
         int num_labels_horizontal = result_clustering_horizontal.num_clusters;
 
-        auto result_vertical = find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, img, show_roi);
-        auto result_horizontal = find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, img, show_roi);
+        find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, frames_history_vertical,show_roi);
+        find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, frames_history_horizontal, show_roi);
 
-        // for (size_t i = 0; i < result_vertical.aoiList.size(); ++i)
-        // {
-        //     const auto &pixels = result_vertical.aoiList[i].closest_pixels_pair;
-        //     cv::line(img, pixels.first, pixels.second, cv::Scalar(0, 0, 255), 2);
-        //     cv::rectangle(img, result_vertical.aoiList[i].bounding_box.first, result_vertical.aoiList[i].bounding_box.second, cv::Scalar(0, 255, 0), 2);
-        //     cv::putText(img, std::to_string(result_vertical.aoiList[i].id), cv::Point(result_vertical.aoiList[i].bounding_box.first.x - 10, result_vertical.aoiList[i].bounding_box.first.y), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(156, 0, 255), 2);
-        // }
-        // for (size_t i = 0; i < result_horizontal.aoiList.size(); ++i)
-        // {
-        //     const auto &pixels = result_horizontal.aoiList[i].closest_pixels_pair;
-        //     cv::line(img, pixels.first, pixels.second, cv::Scalar(255, 0, 0), 2);
-        //     cv::rectangle(img, result_horizontal.aoiList[i].bounding_box.first, result_horizontal.aoiList[i].bounding_box.second, cv::Scalar(0, 255, 255), 2);
-        //     cv::putText(img, std::to_string(result_horizontal.aoiList[i].id), cv::Point(result_horizontal.aoiList[i].bounding_box.first.x, result_horizontal.aoiList[i].bounding_box.first.y - 5), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 165), 2);
-        // }
+        frames_history_vertical.calculateConfidence();
+        frames_history_horizontal.calculateConfidence();
 
-        // tracker.addFrame(result_vertical);
-        // tracker.addFrame(result_horizontal);
+        // Print and visualize the new or updated AOIs.
+        // The id are saved in frames_history_vertical.nr_of_new_AOIs
 
-        calculate_confidence("vertical", result_vertical, frames_vertical);
-        calculate_confidence("horizontal", result_horizontal, frames_horizontal);
-
-        // cv::imshow("Projected_Image", img);
-        // cv::waitKey(0);
-    }
-
-    void calculate_confidence(const std::string &name, frame_AOI_info frame, std::vector<frame_AOI_info> &frames)
-    {
-        int N = 10;                // Number of frames to consider for confidence score
-        float IoUThreshold = 0.8f; // IoU threshold for matching
-
-        // Simulate adding frames with AOI information
-
-        if (frames.size() == N)
+        for (const int id : frames_history_vertical.nr_of_new_AOIs)
         {
-            frames.erase(frames.begin());
+            for (const auto &aoi : frames_history_vertical.aoiList)
+            {
+                if (aoi.id == id)
+                {
+                    cv::line(img, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(0, 0, 255), 2);
+                    cv::rectangle(img, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(0, 255, 0), 2);
+                    cv::putText(img, std::to_string(aoi.confidence), aoi.bounding_box.first, cv::FONT_HERSHEY_SIMPLEX, 0.5,cv::Scalar(156, 255, 0), 1);
+                }
+            }
         }
-        frames.push_back(frame);
 
-        // Match AOIs and compute confidence scores
 
-        matchAOIsAndComputeConfidence(name, frames, N, IoUThreshold, aoiHistories);
+        for (const int id : frames_history_horizontal.nr_of_new_AOIs)
+        {
+            for (const auto &aoi : frames_history_horizontal.aoiList)
+            {
+                if (aoi.id == id)
+                {
+                    cv::line(img, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(255, 0, 0), 2);
+                    cv::rectangle(img, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(255, 255, 0), 2);
+                    cv::putText(img, std::to_string(aoi.confidence), aoi.bounding_box.first, cv::FONT_HERSHEY_SIMPLEX, 0.5,cv::Scalar(0, 255, 255), 2);
+                }
+            }
+        }
 
-        // for (const auto &frame : frames)
-        // {
-        drawAOIs(img_small_blobs_removed, frames[frames.size() -1], aoiHistories, N);
-        // }
+        // Visualize the last nr_of_new_AOIs AOIs in the image
 
-        cv::imshow("AOIs with Confidence and ID", img_small_blobs_removed);
-        cv::waitKey(0);
+        cv::imshow("Projected_Image", img);
+        cv::waitKey(1);
     }
 
     void dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
@@ -404,9 +400,9 @@ private:
 
     // AOITracker tracker;
 
-    std::vector<frame_AOI_info> frames_vertical;
-    std::vector<frame_AOI_info> frames_horizontal;
-    std::unordered_map<int, AOIHistory> aoiHistories;
+    frame_AOI_info frames_history_vertical;
+    frame_AOI_info frames_history_horizontal;
+    // std::unordered_map<int, AOIHistory> aoiHistories;
 
     // Flags for showing images
     bool show_orig_image = false;

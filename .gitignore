@@ -5,6 +5,9 @@ bin/
 lib/
 msg_gen/
 srv_gen/
+.idea/
+.vscode/
+src/cmake-build-debug/
 msg/*Action.msg
 msg/*ActionFeedback.msg
 msg/*ActionGoal.msg
@@ -49,3 +52,6 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+
+# Large .bag files
+*.bag
