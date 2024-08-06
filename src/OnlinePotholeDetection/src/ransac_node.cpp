@@ -10,6 +10,7 @@
 #include <pcl/sample_consensus/sac_model_plane.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <thread>
 
 // Include dynamic reconfigure
 #include <dynamic_reconfigure/server.h>
@@ -42,8 +43,14 @@ public:
         pointcloud_sub = nh.subscribe("/camera/depth/color/points", 1, &RansacNode::pointcloud_callback, this);
         camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
         // camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
-        // rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
-        // depth_sub = nh.subscribe("/camera/depth/image_rect_raw", 1, &RansacNode::depth_callback, this);
+        rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
+        depth_sub = nh.subscribe("/camera/depth/image_rect_raw", 1, &RansacNode::depth_callback, this);
+
+        // pointcloud_sub = nh.subscribe("/stereo/points2", 1, &RansacNode::pointcloud_callback, this);
+        // // camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
+        // camera_info_sub = nh.subscribe("/stereo/left/camera_info", 1, &RansacNode::camera_info_callback, this);
+        // rgb_sub = nh.subscribe("/stereo/left/image_rect_color", 1, &RansacNode::rgb_callback, this);
+        // depth_sub = nh.subscribe("/stereo/depth", 1, &RansacNode::depth_callback, this);
 
         // tracker.initialize(5);
     }
@@ -234,7 +241,6 @@ public:
             cv::waitKey(1);
         }
 
-        cv::Mat gray_orig;
         //  Convert the image to grayscale
         cv::cvtColor(img, gray_orig, cv::COLOR_RGB2GRAY);
 
@@ -258,112 +264,99 @@ public:
             {
                 cv::Mat mask = labels == i;
                 gray_orig.setTo(0, mask);
-                img_small_blobs_removed = img.setTo(cv::Scalar(0, 0, 0), mask);
             }
         }
         float vertical_angle, horizontal_angle;
 
-        std::pair<double, double> angles = find_rotation(gray_orig, show_angles);
+        angles = find_rotation(gray_orig, show_angles);
 
         cv::Mat rotated_image = rotate_image("Image", gray_orig, angles.second, show_rotated_image);
         cv::Mat thresholded_image;
         cv::threshold(rotated_image, thresholded_image, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
         // Apply opencv ximgproc thinning algorithm
-        cv::Mat thinned_image;
         cv::ximgproc::thinning(rotated_image, thinned_image);
 
         // Call the split_horizontal_and_vertical function
-        auto resulting_split = split_horizontal_and_vertical(thinned_image, 10, show_split_image);
+        resulting_split = split_horizontal_and_vertical(thinned_image, 5, show_split_image);
 
-        // Extract the results
-        cv::Mat pruned_vertical = resulting_split.first;
-        cv::Mat pruned_horizontal = resulting_split.second;
+        verticalProcess();
+        horizontalProcess();
 
-        cv::Mat reconstructed_vertical_skeleton = reconstruct_skeleton("Vertical", pruned_vertical, thinned_image, 3,
-                                                                       10, show_reconstructed_image);
-        cv::Mat reconstructed_horizontal_skeleton = reconstruct_skeleton(
-            "Horizontal", pruned_horizontal, thinned_image, 3, 10, show_reconstructed_image);
+        // std::thread vertical_thread(&RansacNode::verticalProcess, this);
+        // std::thread horizontal_thread(&RansacNode::horizontalProcess, this);
 
-        cv::Mat clean_vertical = remove_small_blobs("Vertical", reconstructed_vertical_skeleton, 70,
-                                                    show_image_without_blobs);
-        cv::Mat clean_horizontal = remove_small_blobs("Horizontal", reconstructed_horizontal_skeleton, 70,
-                                                      show_image_without_blobs);
-
-        cv::Mat back_rotated_image_vertical = rotate_image("Vertical - reverse rotation", clean_vertical,
-                                                           -angles.second, show_rotated_image);
-        cv::Mat thresholded_image_vertical;
-        cv::threshold(back_rotated_image_vertical, thresholded_image_vertical, 0, 255,
-                      cv::THRESH_BINARY | cv::THRESH_OTSU);
-        cv::Mat vertical;
-        cv::ximgproc::thinning(thresholded_image_vertical, vertical);
-
-        cv::Mat back_rotated_image_horizontal = rotate_image("Horizontal - reverse rotation", clean_horizontal,
-                                                             -angles.second, show_rotated_image);
-        cv::Mat thresholded_image_horizontal;
-        cv::threshold(back_rotated_image_horizontal, thresholded_image_horizontal, 0, 255,
-                      cv::THRESH_BINARY | cv::THRESH_OTSU);
-        cv::Mat horizontal;
-        cv::ximgproc::thinning(thresholded_image_horizontal, horizontal);
-
-        cluster_info result_clustering_vertical = cluster("Vertical", vertical, show_clusters);
-        cluster_info result_clustering_horizontal = cluster("Horizontal", horizontal, show_clusters);
-
-        cv::Mat vertical_labels = result_clustering_vertical.labels;
-        cv::Mat horizontal_labels = result_clustering_horizontal.labels;
-
-        int num_labels_vertical = result_clustering_vertical.num_clusters;
-        int num_labels_horizontal = result_clustering_horizontal.num_clusters;
-
-        find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, frames_history_vertical,show_roi);
-        find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, frames_history_horizontal, show_roi);
-
-        frames_history_vertical.calculateConfidence();
-        frames_history_horizontal.calculateConfidence();
+        // vertical_thread.join();
+        // horizontal_thread.join();
 
         // Print and visualize the new or updated AOIs.
-        // The id are saved in frames_history_vertical.nr_of_new_AOIs
-
-        for (const int id : frames_history_vertical.nr_of_new_AOIs)
+        // The id are saved in frames_history_vertical.nr_of_new_AOI
+        for (const auto &aoi : frames_history_vertical.aoiList)
         {
-            for (const auto &aoi : frames_history_vertical.aoiList)
+            if (aoi.confidence >= required_confidence)
             {
-                if (aoi.id == id)
-                {
-                    cv::line(img, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(0, 0, 255), 2);
-                    cv::rectangle(img, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(0, 255, 0), 2);
-                    cv::putText(img, std::to_string(aoi.confidence), aoi.bounding_box.first, cv::FONT_HERSHEY_SIMPLEX, 0.5,cv::Scalar(156, 255, 0), 1);
-                }
+                cv::line(img, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(0, 0, 255), 2);
+                cv::rectangle(img, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(0, 255, 0), 2);
+                cv::putText(img, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(25, +25)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
             }
         }
-
-
-        for (const int id : frames_history_horizontal.nr_of_new_AOIs)
+        for (const auto &aoi : frames_history_horizontal.aoiList)
         {
-            for (const auto &aoi : frames_history_horizontal.aoiList)
+
+            if (aoi.confidence >= required_confidence)
             {
-                if (aoi.id == id)
-                {
-                    cv::line(img, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(255, 0, 0), 2);
-                    cv::rectangle(img, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(255, 255, 0), 2);
-                    cv::putText(img, std::to_string(aoi.confidence), aoi.bounding_box.first, cv::FONT_HERSHEY_SIMPLEX, 0.5,cv::Scalar(0, 255, 255), 2);
-                }
+                cv::line(img, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(255, 0, 0), 2);
+                cv::rectangle(img, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(255, 255, 0), 2);
+                cv::putText(img, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(0, -5)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
             }
         }
-
-        // Visualize the last nr_of_new_AOIs AOIs in the image
-
         cv::imshow("Projected_Image", img);
         cv::waitKey(1);
     }
 
-    void dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
+    void verticalProcess()
+    {
+        // Extract the results
+        cv::Mat pruned_vertical = resulting_split.first;
+        cv::Mat reconstructed_vertical_skeleton = reconstruct_skeleton("Vertical", pruned_vertical, thinned_image, 3, reconstruction_iterations, show_reconstructed_image);
+        cv::Mat clean_vertical = remove_small_blobs("Vertical", reconstructed_vertical_skeleton, skeleton_pieces, show_image_without_blobs);
+        cv::Mat back_rotated_image_vertical = rotate_image("Vertical - reverse rotation", clean_vertical, -angles.second, show_rotated_image);
+        cv::Mat thresholded_image_vertical;
+        cv::threshold(back_rotated_image_vertical, thresholded_image_vertical, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        cv::ximgproc::thinning(thresholded_image_vertical, vertical);
+        cluster_info result_clustering_vertical = cluster("Vertical", vertical, show_clusters);
+        cv::Mat vertical_labels = result_clustering_vertical.labels;
+        int num_labels_vertical = result_clustering_vertical.num_clusters;
+        find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, frames_history_vertical, show_roi);
+        frames_history_vertical.calculateConfidence();
+    }
+
+    void horizontalProcess()
+    {
+        cv::Mat pruned_horizontal = resulting_split.second;
+        cv::Mat reconstructed_horizontal_skeleton = reconstruct_skeleton("Horizontal", pruned_horizontal, thinned_image, 3, reconstruction_iterations, show_reconstructed_image);
+        cv::Mat clean_horizontal = remove_small_blobs("Horizontal", reconstructed_horizontal_skeleton, skeleton_pieces, show_image_without_blobs);
+        cv::Mat back_rotated_image_horizontal = rotate_image("Horizontal - reverse rotation", clean_horizontal, -angles.second, show_rotated_image);
+        cv::Mat thresholded_image_horizontal;
+        cv::threshold(back_rotated_image_horizontal, thresholded_image_horizontal, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        cv::ximgproc::thinning(thresholded_image_horizontal, horizontal);
+        cluster_info result_clustering_horizontal = cluster("Horizontal", horizontal, show_clusters);
+        cv::Mat horizontal_labels = result_clustering_horizontal.labels;
+        int num_labels_horizontal = result_clustering_horizontal.num_clusters;
+        find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, frames_history_horizontal, show_roi);
+        frames_history_horizontal.calculateConfidence();
+    }
+
+    void
+    dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
     {
         // ROS_INFO("New values: [%d] - [%s]", config.int_param, config.str_param.c_str());
         ransac_threshold = config.ransac_threshold / (double)1000;
         min_cluster_size = config.min_cluster_size;
+        skeleton_pieces = config.skeleton_pieces;
+        reconstruction_iterations = config.reconstruction_iterations;
 
-        // Flags for showing images
-        show_orig_image = config.show_orig_image;
+            // Flags for showing images
+            show_orig_image = config.show_orig_image;
         show_rotated_image = config.show_rotated_image;
         show_split_image = config.show_split_image;
         show_reconstructed_image = config.show_reconstructed_image;
@@ -372,6 +365,7 @@ public:
         show_roi = config.show_roi;
         show_final_image = config.show_final_image;
         show_angles = config.show_angles;
+        required_confidence = config.required_confidence / (double)20;
     }
 
 private:
@@ -379,8 +373,6 @@ private:
     double fy;
     double cx;
     double cy;
-    double ransac_threshold = 0.03;
-    int min_cluster_size = 350;
     unsigned int img_height;
     unsigned int img_width;
     std_msgs::Header img_header;
@@ -393,16 +385,26 @@ private:
     ros::Subscriber depth_sub;
     ros::NodeHandle nh;
 
+    std::pair<double, double> angles;
+
     cv::Mat rgb_image;
     cv::Mat depth_image;
     cv::Mat main_img;
-    cv::Mat img_small_blobs_removed;
-
-    // AOITracker tracker;
+    cv::Mat gray_orig;
+    cv::Mat thinned_image;
+    std::pair<cv::Mat, cv::Mat> resulting_split;
+    cv::Mat vertical;
+    cv::Mat horizontal;
 
     frame_AOI_info frames_history_vertical;
     frame_AOI_info frames_history_horizontal;
-    // std::unordered_map<int, AOIHistory> aoiHistories;
+
+    // Dynamic reconfigure variables
+    double ransac_threshold = 0.03;
+    int min_cluster_size = 350;
+    double required_confidence = 0.7;
+    int skeleton_pieces = 70;
+    int reconstruction_iterations = 7;
 
     // Flags for showing images
     bool show_orig_image = false;
@@ -411,22 +413,14 @@ private:
     bool show_reconstructed_image = false;
     bool show_image_without_blobs = false;
     bool show_clusters = false;
-    bool show_roi = true;
+    bool show_roi = false;
     bool show_final_image = true;
     bool show_angles = false;
 };
 
-// RansacNode* callback_object;
-
-// void callback_wrapper()
-// {
-//     //ROS_INFO("Callback wrapper");
-//     callback_object -> dynamic_reconfigure_callback();
-// }
-
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "ransac_points_node");
+    ros::init(argc, argv, "ransac_node");
     RansacNode rn;
     // callback_object = &rn;
 
@@ -444,21 +438,6 @@ int main(int argc, char **argv)
             break;
         }
     }
-
-    // // Simulate adding frames with AOIs
-    // frame_AOI_info frame1 = {{{cv::Point(10, 10), cv::Point(50, 50)}}, {{cv::Point(10, 10), cv::Point(50, 50)}, {cv::Point(60, 60), cv::Point(100, 100)}}};
-    // frame_AOI_info frame2 = {{{cv::Point(12, 12), cv::Point(52, 52)}}, {{cv::Point(12, 12), cv::Point(52, 52)}, {cv::Point(62, 62), cv::Point(102, 102)}}};
-
-    // tracker.addFrame(frame1);
-    // tracker.addFrame(frame2);
-
-    // // Get and print tracked AOIs for the current frame
-    // auto trackedAOIs = tracker.getCurrentTrackedAOIs();
-    // for (const auto &aoi : trackedAOIs)
-    // {
-    //     std::cout << "Tracked AOI ID: " << aoi.id << ", bounding_box: (" << aoi.bounding_box.first.x << ", " << aoi.bounding_box.first.y << ") - ("
-    //               << aoi.bounding_box.second.x << ", " << aoi.bounding_box.second.y << "), Confidence: " << aoi.confidence << std::endl;
-    // }
 
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig> server;
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig>::CallbackType f;

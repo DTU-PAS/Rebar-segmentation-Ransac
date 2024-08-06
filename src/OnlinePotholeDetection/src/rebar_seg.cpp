@@ -1,6 +1,6 @@
 #include <rebar_seg.h>
 
-std::pair<double, double> find_rotation(cv::Mat& image, bool debug_level)
+std::pair<double, double> find_rotation(cv::Mat &image, bool debug_level)
 {
     // Detect lines using Hough Line Transform
     std::vector<cv::Vec4i> lines;
@@ -35,14 +35,13 @@ std::pair<double, double> find_rotation(cv::Mat& image, bool debug_level)
     if (!horizontal_angles.empty())
     {
         average_horizontal_angle = std::accumulate(horizontal_angles.begin(), horizontal_angles.end(), 0.0) /
-            horizontal_angles.size();
+                                   horizontal_angles.size();
     }
 
     double average_vertical_angle = 0;
     if (!vertical_angles.empty())
     {
-        average_vertical_angle = std::accumulate(vertical_angles.begin(), vertical_angles.end(), 0.0) / vertical_angles.
-            size();
+        average_vertical_angle = std::accumulate(vertical_angles.begin(), vertical_angles.end(), 0.0) / vertical_angles.size();
     }
 
     if (debug_level)
@@ -54,7 +53,7 @@ std::pair<double, double> find_rotation(cv::Mat& image, bool debug_level)
     return std::make_pair(average_vertical_angle, average_horizontal_angle);
 }
 
-cv::Mat rotate_image(const std::string& name, const cv::Mat& image, double angle, bool debug_level)
+cv::Mat rotate_image(const std::string &name, const cv::Mat &image, double angle, bool debug_level)
 {
     int h = image.rows;
     int w = image.cols;
@@ -79,7 +78,7 @@ cv::Mat rotate_image(const std::string& name, const cv::Mat& image, double angle
     return rotated;
 }
 
-std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat& skeleton, int left_right_num, bool debug_level)
+std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &skeleton, int left_right_num, bool debug_level)
 {
     int height = skeleton.rows;
     int width = skeleton.cols;
@@ -126,11 +125,9 @@ std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat& skeleto
     }
     if (debug_level)
     {
-        std::cout << "Vertical Shape: " << pruned_vertical.size() << std::endl;
         cv::imshow("pruned_vertical", pruned_vertical);
         cv::waitKey(1);
-
-        std::cout << "Horizontal Shape: " << pruned_horizontal.size() << std::endl;
+        
         cv::imshow("pruned_horizontal", pruned_horizontal);
         cv::waitKey(1);
     }
@@ -138,7 +135,98 @@ std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat& skeleto
     return std::make_pair(pruned_vertical, pruned_horizontal);
 }
 
-cv::Mat reconstruct_skeleton(const std::string& name, const cv::Mat& src, const cv::Mat& orig, int ksize,
+// std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &skeleton, int left_right_num, bool debug_level)
+// {
+//     int height = skeleton.rows;
+//     int width = skeleton.cols;
+
+//     cv::Mat pruned_vertical = skeleton.clone();
+//     cv::Mat pruned_horizontal = skeleton.clone();
+
+//     for (int y = 0; y < height; ++y)
+//     {
+//         for (int x = 0; x < width; ++x)
+//         {
+//             if (skeleton.at<uchar>(y, x) == 255)
+//             {
+//                 // Check next lines in the vertical direction
+//                 for (int i = 1; i < left_right_num; ++i)
+//                 {
+//                     if (y + i < height && skeleton.at<uchar>(y + i, x) == 255)
+//                     {
+//                         pruned_horizontal.at<uchar>(y, x) = 0;
+//                         break;
+//                     }
+//                     if (y - i >= 0 && skeleton.at<uchar>(y - i, x) == 255)
+//                     {
+//                         pruned_horizontal.at<uchar>(y, x) = 0;
+//                         break;
+//                     }
+//                 }
+//                 // Check next lines in the horizontal direction
+//                 for (int i = 1; i < left_right_num; ++i)
+//                 {
+//                     if (x + i < width && skeleton.at<uchar>(y, x + i) == 255)
+//                     {
+//                         pruned_vertical.at<uchar>(y, x) = 0;
+//                         break;
+//                     }
+//                     if (x - i >= 0 && skeleton.at<uchar>(y, x - i) == 255)
+//                     {
+//                         pruned_vertical.at<uchar>(y, x) = 0;
+//                         break;
+//                     }
+//                 }
+//                 // Check next lines in the diagonal directions
+//                 for (int i = 1; i < left_right_num; ++i)
+//                 {
+//                     // Bottom-right
+//                     if (y + i < height && x + i < width && skeleton.at<uchar>(y + i, x + i) == 255)
+//                     {
+//                         pruned_horizontal.at<uchar>(y, x) = 0;
+//                         pruned_vertical.at<uchar>(y, x) = 0;
+//                         break;
+//                     }
+//                     // Bottom-left
+//                     if (y + i < height && x - i >= 0 && skeleton.at<uchar>(y + i, x - i) == 255)
+//                     {
+//                         pruned_horizontal.at<uchar>(y, x) = 0;
+//                         pruned_vertical.at<uchar>(y, x) = 0;
+//                         break;
+//                     }
+//                     // Top-right
+//                     if (y - i >= 0 && x + i < width && skeleton.at<uchar>(y - i, x + i) == 255)
+//                     {
+//                         pruned_horizontal.at<uchar>(y, x) = 0;
+//                         pruned_vertical.at<uchar>(y, x) = 0;
+//                         break;
+//                     }
+//                     // Top-left
+//                     if (y - i >= 0 && x - i >= 0 && skeleton.at<uchar>(y - i, x - i) == 255)
+//                     {
+//                         pruned_horizontal.at<uchar>(y, x) = 0;
+//                         pruned_vertical.at<uchar>(y, x) = 0;
+//                         break;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     if (debug_level)
+//     {
+//         std::cout << "Vertical Shape: " << pruned_vertical.size() << std::endl;
+//         cv::imshow("pruned_vertical", pruned_vertical);
+//         cv::waitKey(1);
+
+//         std::cout << "Horizontal Shape: " << pruned_horizontal.size() << std::endl;
+//         cv::imshow("pruned_horizontal", pruned_horizontal);
+//         cv::waitKey(1);
+//     }
+
+//     return std::make_pair(pruned_vertical, pruned_horizontal);
+// }
+
+cv::Mat reconstruct_skeleton(const std::string &name, const cv::Mat &src, const cv::Mat &orig, int ksize,
                              int iterations, int debug_level)
 {
     cv::Mat this_iteration = src.clone();
@@ -188,7 +276,7 @@ cv::Mat reconstruct_skeleton(const std::string& name, const cv::Mat& src, const 
     return this_iteration; // Note: Pruning functionality is not implemented
 }
 
-cv::Mat remove_small_blobs(const std::string& name, const cv::Mat& img, int min_blob_size, bool debug_level)
+cv::Mat remove_small_blobs(const std::string &name, const cv::Mat &img, int min_blob_size, bool debug_level)
 {
     // Perform connected components analysis
     cv::Mat labels, stats, centroids;
@@ -230,7 +318,7 @@ cv::Vec3b random_color()
     return cv::Vec3b(dis(gen), dis(gen), dis(gen));
 }
 
-cluster_info cluster(const std::string& name, const cv::Mat& img, bool debug_level)
+cluster_info cluster(const std::string &name, const cv::Mat &img, bool debug_level)
 {
     int height = img.rows;
     int width = img.cols;
@@ -260,7 +348,7 @@ cluster_info cluster(const std::string& name, const cv::Mat& img, bool debug_lev
     if (debug_level)
     {
         cv::imshow("Clustered " + name, cluster_img);
-        cv::waitKey(1);
+        cv::waitKey(0);
     }
 
     return cluster_info{cluster_img, num_labels - 1, labels, stats, centroids};
@@ -290,8 +378,47 @@ float computeIoU(const AOI &a, const AOI &b)
     return static_cast<float>(intersectionArea) / unionArea;
 }
 
-void find_area_of_interest(const std::string& name, const cv::Mat& labels, int num_labels, const cv::Mat& gray_orig,
-                           frame_AOI_info& frame_history, bool debug_level = 0)
+void computeAOI(frame_AOI_info &frame_history, AOI current_aoi, int highestId = 0)
+{
+    bool matched = false;
+    if (frame_history.aoiList.size() <= 0)
+    {
+        current_aoi.id = 1;
+        current_aoi.matchCount = 1;
+
+        frame_history.addAOI(current_aoi);
+        frame_history.nr_of_new_AOIs.push_back(current_aoi.id);
+    }
+    else
+    {
+        for (auto &aoi : frame_history.aoiList)
+        {
+            if (computeIoU(aoi, current_aoi) > 0.2)
+            {
+                aoi.closest_pixels_pair = current_aoi.closest_pixels_pair;
+                aoi.bounding_box = current_aoi.bounding_box;
+                aoi.matchCount += 2;
+                if (aoi.matchCount > 20)
+                {
+                    aoi.matchCount = 20;
+                }
+                matched = true;
+                frame_history.nr_of_new_AOIs.push_back(aoi.id);
+                break; // Exit the loop since we found a match
+            }
+        }
+
+        if (!matched)
+        {
+            current_aoi.id = highestId + 1;
+            current_aoi.matchCount = 1;
+            frame_history.addAOI(current_aoi);
+            frame_history.nr_of_new_AOIs.push_back(current_aoi.id);
+        }
+    }
+}
+
+void find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_labels, const cv::Mat &gray_orig, frame_AOI_info &frame_history, bool debug_level = 0)
 {
     int WIDTH = gray_orig.cols;
     int HEIGHT = gray_orig.rows;
@@ -302,14 +429,12 @@ void find_area_of_interest(const std::string& name, const cv::Mat& labels, int n
     std::vector<std::pair<int, int>> clusterPairs;
     std::vector<std::pair<cv::Point, cv::Point>> closestPixels;
 
-    // frame_AOI_info frame_aoi;
-
     cv::Mat damaged_area_orig_size;
     damaged_area_orig_size = cv::Mat::zeros(gray_orig.size(), CV_8U);
 
     // find the highest id sofar
     int highestId = 0;
-    for (auto& aoi : frame_history.aoiList)
+    for (auto &aoi : frame_history.aoiList)
     {
         if (aoi.id > highestId)
         {
@@ -321,11 +446,6 @@ void find_area_of_interest(const std::string& name, const cv::Mat& labels, int n
         }
     }
     frame_history.nr_of_new_AOIs.clear();
-
-    std::cout << "Highest ID: " << highestId << std::endl;
-    std::cout << "Number of AOIs: " << frame_history.aoiList.size() << std::endl;
-    std::cout << "Number of labels: " << num_labels << std::endl;
-
     // Find the closest pixel between the clusters
     for (int i = 1; i <= num_labels; ++i)
     {
@@ -337,11 +457,9 @@ void find_area_of_interest(const std::string& name, const cv::Mat& labels, int n
 
             double min_distance = 1000;
             std::pair<cv::Point, cv::Point> closest_pixel_pair;
-            for (cv::MatIterator_<cv::Point> it1 = cluster1.begin<cv::Point>(), end1 = cluster1.end<cv::Point>(); it1 !=
-                 end1; ++it1)
+            for (cv::MatIterator_<cv::Point> it1 = cluster1.begin<cv::Point>(), end1 = cluster1.end<cv::Point>(); it1 != end1; ++it1)
             {
-                for (cv::MatIterator_<cv::Point> it2 = cluster2.begin<cv::Point>(), end2 = cluster2.end<cv::Point>();
-                     it2 != end2; ++it2)
+                for (cv::MatIterator_<cv::Point> it2 = cluster2.begin<cv::Point>(), end2 = cluster2.end<cv::Point>(); it2 != end2; ++it2)
                 {
                     double distance = cv::norm(*it1 - *it2);
                     if (distance < min_distance)
@@ -352,14 +470,20 @@ void find_area_of_interest(const std::string& name, const cv::Mat& labels, int n
                 }
             }
             // This if statement ensures that only damages are marked and not just the distance between two rebars
+
             if (min_distance < 100)
             {
                 // Make the bounding box bigger by 10 pixels in each direction
                 cv::Point pt1 = closest_pixel_pair.first, pt2 = closest_pixel_pair.second;
-                int x1 = clamp(pt1.x - 10, 0, WIDTH - 1);
-                int y1 = clamp(pt1.y - 10, 0, HEIGHT - 1);
-                int x2 = clamp(pt2.x + 10, 0, WIDTH - 1);
-                int y2 = clamp(pt2.y + 10, 0, HEIGHT - 1);
+                int x1 = clamp(pt1.x - 15, 0, WIDTH - 1);
+                int y1 = clamp(pt1.y - 15, 0, HEIGHT - 1);
+                int x2 = clamp(pt2.x + 15, 0, WIDTH - 1);
+                int y2 = clamp(pt2.y + 15, 0, HEIGHT - 1);
+
+                if (x1 > x2)
+                    std::swap(x1, x2);
+                if (y1 > y2)
+                    std::swap(y1, y2);
 
                 cv::Rect rect(x1, y1, x2 - x1, y2 - y1);
                 cv::Rect img_bounds(0, 0, WIDTH, HEIGHT);
@@ -368,28 +492,38 @@ void find_area_of_interest(const std::string& name, const cv::Mat& labels, int n
                 cv::Mat damaged_area = cv::Mat::zeros(rect.size(), CV_8U);
 
                 // Extract the damaged area from the original image
-                if (x1 < x2 && y1 < y2)
+                if (x1 <= x2 && y1 <= y2)
+                {
+                    gray_orig(rect).copyTo(damaged_area);
+                    damaged_area.copyTo(damaged_area_orig_size(cv::Rect(x1, y1, damaged_area.cols, damaged_area.rows)));
+                }
+                else
                 {
                     gray_orig(rect).copyTo(damaged_area);
                     damaged_area.copyTo(damaged_area_orig_size(cv::Rect(x1, y1, damaged_area.cols, damaged_area.rows)));
                 }
 
-                // Withing the bounding box, cluster the damaged area. We can then pair the clusters based on the distance of their centroids
+                // Within the bounding box, cluster the damaged area. We can then pair the clusters based on the distance of their centroids
                 // and ultimately find the closest pixels between the clusters.
                 // The closes pixels can then be used to calcuate the length of the damage and show a line between the two points.
-                cluster_info result = cluster(name, damaged_area_orig_size, 0);
+                cluster_info result = cluster("FAOI: " + name, damaged_area_orig_size, 0);
 
                 cv::Mat clustered_image = result.img;
                 cv::Mat labels_damaged = result.labels;
                 int num_components = result.num_clusters + 1;
                 cv::Mat centroids = result.centroids;
 
-                // pair clusters based on the distance of their centroids
+                cv::rectangle(clustered_image, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255), 2);
+
+                cv::imshow("Clustered 2 " + name, clustered_image);
+                cv::waitKey(1);
+
+                // Pair clusters based on the distance of their centroids
                 // The clustering output the clusters in wrong order so it can happen, that the line are drawn between the wrong clusters.
                 if (num_components < 2)
                 {
-                    std::cerr << "Not enough clusters to pair." << std::endl;
-                    return; // frame_history;
+                    // Not enough clusters to pair
+                    return;
                 }
 
                 std::vector<bool> paired(num_components, false);
@@ -411,9 +545,10 @@ void find_area_of_interest(const std::string& name, const cv::Mat& labels, int n
                     return pixels;
                 };
 
-                int pairCount = 0; // Initialize the counter
-
                 // Pair clusters until one is left
+                // The closest pair of clusters is paired and the closest pixels between the two clusters are found
+                // The clusters shouldn't be paired too far away from each other
+
                 while (true)
                 {
                     double closestDistance = std::numeric_limits<double>::max();
@@ -451,7 +586,6 @@ void find_area_of_interest(const std::string& name, const cv::Mat& labels, int n
                     paired[closestIdx1] = true;
                     paired[closestIdx2] = true;
                     clusterPairs.push_back(std::make_pair(closestIdx1, closestIdx2));
-                    pairCount++; // Increment the counter
 
                     // Get pixels for each cluster
                     std::vector<cv::Point> pixels1 = getClusterPixels(closestIdx1);
@@ -460,10 +594,13 @@ void find_area_of_interest(const std::string& name, const cv::Mat& labels, int n
                     // Find the closest pixels between the two clusters
                     double minPixelDistance = std::numeric_limits<double>::max();
                     cv::Point closestPixel1, closestPixel2;
-                    for (const auto& p1 : pixels1)
+                    for (const auto &p1 : pixels1)
                     {
-                        for (const auto& p2 : pixels2)
+                        for (const auto &p2 : pixels2)
                         {
+                            // if (euclideanDistance(p1, p2) < 100)
+                            // {
+
                             double pixelDistance = euclideanDistance(p1, p2);
                             if (pixelDistance < minPixelDistance)
                             {
@@ -471,59 +608,21 @@ void find_area_of_interest(const std::string& name, const cv::Mat& labels, int n
                                 closestPixel1 = p1;
                                 closestPixel2 = p2;
                             }
+                            // }
                         }
                     }
 
                     AOI current_aoi;
                     current_aoi.closest_pixels_pair = std::make_pair(closestPixel1, closestPixel2);
                     current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
-                    bool matched = false;
-                    if (frame_history.aoiList.size() <= 0)
-                    {
-                        current_aoi.id = 1;
-                        current_aoi.matchCount = 1;
-
-                        frame_history.addAOI(current_aoi);
-                        frame_history.nr_of_new_AOIs.push_back(current_aoi.id);
-                    }
-                    else
-                    {
-                        for (auto& aoi : frame_history.aoiList)
-                        {
-                            if (computeIoU(aoi, current_aoi) > 0.2)
-                            {
-                                aoi.closest_pixels_pair = std::make_pair(closestPixel1, closestPixel2);
-                                aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
-                                aoi.matchCount+=2;
-                                if (aoi.matchCount > 10)
-                                {
-                                    aoi.matchCount = 10;
-                                }
-                                matched = true;
-                                frame_history.nr_of_new_AOIs.push_back(aoi.id);
-                                break; // Exit the loop since we found a match
-                            }
-                        }
-
-                        if (!matched)
-                        {
-                            AOI new_aoi;
-                            new_aoi.closest_pixels_pair = std::make_pair(closestPixel1, closestPixel2);
-                            new_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
-                            new_aoi.id = highestId + 1;
-                            new_aoi.matchCount = 1;
-                            frame_history.addAOI(new_aoi);
-                            frame_history.nr_of_new_AOIs.push_back(new_aoi.id);
-                            return; // frame_history;
-                        }
-                    }
+                    computeAOI(frame_history, current_aoi, highestId);
                 }
             }
         }
     }
 }
 
-cv::Point3f pixel_to_camera(int u, int v, float Z, const cv::Mat& K_inv)
+cv::Point3f pixel_to_camera(int u, int v, float Z, const cv::Mat &K_inv)
 {
     cv::Mat pixel_coords = (cv::Mat_<double>(3, 1) << u, v, 1);
     cv::Mat camera_coords = K_inv * pixel_coords * Z;
@@ -531,14 +630,14 @@ cv::Point3f pixel_to_camera(int u, int v, float Z, const cv::Mat& K_inv)
 }
 
 // Function to plot camera coordinates (placeholder, implement as needed)
-void plot_camera_coordinates(const std::vector<std::vector<cv::Point3f>>& camera_cluster_coordinates, int param)
+void plot_camera_coordinates(const std::vector<std::vector<cv::Point3f>> &camera_cluster_coordinates, int param)
 {
     // Implement your plotting logic here
 }
 
 // Function that calculates and returns 3d coordinates of the white pixels in the image
-std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat& img, const cv::Mat& depth_image,
-                                                         const cv::Mat& labels, double Z)
+std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat &img, const cv::Mat &depth_image,
+                                                         const cv::Mat &labels, double Z)
 {
     cv::Mat K = (cv::Mat_<double>(3, 3) << 465.33203125, 0, 353.9921875, 0, 465.33203125, 251.28125, 0, 0, 1);
     cv::Mat K_inv = K.inv();
@@ -564,10 +663,10 @@ std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat& img, con
 
     std::vector<std::vector<cv::Point3f>> camera_cluster_coordinates;
 
-    for (const auto& cluster : pixel_coordinates)
+    for (const auto &cluster : pixel_coordinates)
     {
         std::vector<cv::Point3f> camera_coordinates;
-        for (const auto& pt : cluster)
+        for (const auto &pt : cluster)
         {
             int v = pt.y, u = pt.x;
             float Z = depth_image.at<uint16_t>(v, u) * 0.001f;

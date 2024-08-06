@@ -42,21 +42,6 @@ struct AOI
         return (point.x >= bounding_box.first.x && point.x <= bounding_box.second.x &&
                 point.y >= bounding_box.first.y && point.y <= bounding_box.second.y);
     }
-
-    // Method to serialize AOI (for saving/transmitting)
-    std::string serialize() const
-    {
-        return "Closes Pixels if ID: " + std::to_string(id) + "\n" +
-               std::to_string(closest_pixels_pair.first.x) + "," +
-               std::to_string(closest_pixels_pair.first.y) + "," +
-               std::to_string(closest_pixels_pair.second.x) + "," +
-               std::to_string(closest_pixels_pair.second.y) + "\n" +
-               "BBox ID: " + std::to_string(id) + "\n" +
-               std::to_string(bounding_box.first.x) + "," +
-               std::to_string(bounding_box.first.y) + "," +
-               std::to_string(bounding_box.second.x) + "," +
-               std::to_string(bounding_box.second.y);
-    }
 };
 
 struct frame_AOI_info
@@ -69,23 +54,11 @@ struct frame_AOI_info
     {
         // Check the length of the list
         // Keep the list length to N
-        if (aoiList.size() >= 10)
+        if (aoiList.size() >= 20)
         {
             aoiList.erase(aoiList.begin());
         }
         aoiList.push_back(aoi);
-    }
-
-    void updateAOI(const AOI &aoi)
-    {
-        for (auto &aoi_ : aoiList)
-        {
-            if (aoi_.id == aoi.id)
-            {
-                aoi_ = aoi;
-                return;
-            }
-        }
     }
 
     // Loop through the AOI list and compare each element to every other element using IoU
@@ -94,23 +67,8 @@ struct frame_AOI_info
     {
         for (auto &aoi : aoiList)
         {
-            aoi.confidence = (float)aoi.matchCount / 10;
+            aoi.confidence = (float)aoi.matchCount / 20;
         }
-    }
-
-    // Method to serialize frame AOI info
-    std::string serialize() const
-    {
-        std::string serialized = "";
-        for (const auto &aoi : aoiList)
-        {
-            if (!serialized.empty())
-            {
-                serialized += ";";
-            }
-            serialized += aoi.serialize();
-        }
-        return serialized;
     }
 };
 

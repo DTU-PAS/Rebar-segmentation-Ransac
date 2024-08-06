@@ -61,7 +61,12 @@
         "cfenv": "cpp",
         "cinttypes": "cpp",
         "variant": "cpp",
-        "bit": "cpp"
+        "bit": "cpp",
+        "unordered_set": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
+        "shared_mutex": "cpp",
+        "*.ipp": "cpp"
     },
     "cmake.sourceDirectory": "/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/src/OnlinePotholeDetection",
     "python.autoComplete.extraPaths": [
