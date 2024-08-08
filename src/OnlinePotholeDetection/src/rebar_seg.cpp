@@ -78,7 +78,7 @@ cv::Mat rotate_image(const std::string &name, const cv::Mat &image, double angle
     return rotated;
 }
 
-std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &skeleton, int left_right_num, bool debug_level)
+/*std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &skeleton, int left_right_num, bool debug_level)
 {
     int height = skeleton.rows;
     int width = skeleton.cols;
@@ -127,104 +127,36 @@ std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &skeleto
     {
         cv::imshow("pruned_vertical", pruned_vertical);
         cv::waitKey(1);
-        
+
         cv::imshow("pruned_horizontal", pruned_horizontal);
         cv::waitKey(1);
     }
 
     return std::make_pair(pruned_vertical, pruned_horizontal);
+}*/
+
+std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, int left_right_num, bool debug_level)
+{
+
+    // Step 2: Detect Horizontal Lines
+    cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(25, 1));
+    cv::Mat horizontalLines;
+    cv::morphologyEx(image, horizontalLines, cv::MORPH_OPEN, horizontalKernel);
+
+    // Step 3: Detect Vertical Lines
+    cv::Mat verticalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, 25));
+    cv::Mat verticalLines;
+    cv::morphologyEx(image, verticalLines, cv::MORPH_OPEN, verticalKernel);
+
+    if (debug_level)
+    {
+        cv::imshow("Detected Horizontal Lines", horizontalLines);
+        cv::imshow("Detected Vertical Lines", verticalLines);
+        cv::waitKey(1);
+    }
+
+    return std::make_pair(verticalLines, horizontalLines);
 }
-
-// std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &skeleton, int left_right_num, bool debug_level)
-// {
-//     int height = skeleton.rows;
-//     int width = skeleton.cols;
-
-//     cv::Mat pruned_vertical = skeleton.clone();
-//     cv::Mat pruned_horizontal = skeleton.clone();
-
-//     for (int y = 0; y < height; ++y)
-//     {
-//         for (int x = 0; x < width; ++x)
-//         {
-//             if (skeleton.at<uchar>(y, x) == 255)
-//             {
-//                 // Check next lines in the vertical direction
-//                 for (int i = 1; i < left_right_num; ++i)
-//                 {
-//                     if (y + i < height && skeleton.at<uchar>(y + i, x) == 255)
-//                     {
-//                         pruned_horizontal.at<uchar>(y, x) = 0;
-//                         break;
-//                     }
-//                     if (y - i >= 0 && skeleton.at<uchar>(y - i, x) == 255)
-//                     {
-//                         pruned_horizontal.at<uchar>(y, x) = 0;
-//                         break;
-//                     }
-//                 }
-//                 // Check next lines in the horizontal direction
-//                 for (int i = 1; i < left_right_num; ++i)
-//                 {
-//                     if (x + i < width && skeleton.at<uchar>(y, x + i) == 255)
-//                     {
-//                         pruned_vertical.at<uchar>(y, x) = 0;
-//                         break;
-//                     }
-//                     if (x - i >= 0 && skeleton.at<uchar>(y, x - i) == 255)
-//                     {
-//                         pruned_vertical.at<uchar>(y, x) = 0;
-//                         break;
-//                     }
-//                 }
-//                 // Check next lines in the diagonal directions
-//                 for (int i = 1; i < left_right_num; ++i)
-//                 {
-//                     // Bottom-right
-//                     if (y + i < height && x + i < width && skeleton.at<uchar>(y + i, x + i) == 255)
-//                     {
-//                         pruned_horizontal.at<uchar>(y, x) = 0;
-//                         pruned_vertical.at<uchar>(y, x) = 0;
-//                         break;
-//                     }
-//                     // Bottom-left
-//                     if (y + i < height && x - i >= 0 && skeleton.at<uchar>(y + i, x - i) == 255)
-//                     {
-//                         pruned_horizontal.at<uchar>(y, x) = 0;
-//                         pruned_vertical.at<uchar>(y, x) = 0;
-//                         break;
-//                     }
-//                     // Top-right
-//                     if (y - i >= 0 && x + i < width && skeleton.at<uchar>(y - i, x + i) == 255)
-//                     {
-//                         pruned_horizontal.at<uchar>(y, x) = 0;
-//                         pruned_vertical.at<uchar>(y, x) = 0;
-//                         break;
-//                     }
-//                     // Top-left
-//                     if (y - i >= 0 && x - i >= 0 && skeleton.at<uchar>(y - i, x - i) == 255)
-//                     {
-//                         pruned_horizontal.at<uchar>(y, x) = 0;
-//                         pruned_vertical.at<uchar>(y, x) = 0;
-//                         break;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     if (debug_level)
-//     {
-//         std::cout << "Vertical Shape: " << pruned_vertical.size() << std::endl;
-//         cv::imshow("pruned_vertical", pruned_vertical);
-//         cv::waitKey(1);
-
-//         std::cout << "Horizontal Shape: " << pruned_horizontal.size() << std::endl;
-//         cv::imshow("pruned_horizontal", pruned_horizontal);
-//         cv::waitKey(1);
-//     }
-
-//     return std::make_pair(pruned_vertical, pruned_horizontal);
-// }
 
 cv::Mat reconstruct_skeleton(const std::string &name, const cv::Mat &src, const cv::Mat &orig, int ksize,
                              int iterations, int debug_level)
@@ -348,7 +280,7 @@ cluster_info cluster(const std::string &name, const cv::Mat &img, bool debug_lev
     if (debug_level)
     {
         cv::imshow("Clustered " + name, cluster_img);
-        cv::waitKey(0);
+        cv::waitKey(1);
     }
 
     return cluster_info{cluster_img, num_labels - 1, labels, stats, centroids};
@@ -398,9 +330,9 @@ void computeAOI(frame_AOI_info &frame_history, AOI current_aoi, int highestId = 
                 aoi.closest_pixels_pair = current_aoi.closest_pixels_pair;
                 aoi.bounding_box = current_aoi.bounding_box;
                 aoi.matchCount += 2;
-                if (aoi.matchCount > 20)
+                if (aoi.matchCount > HISTORY)
                 {
-                    aoi.matchCount = 20;
+                    aoi.matchCount = HISTORY;
                 }
                 matched = true;
                 frame_history.nr_of_new_AOIs.push_back(aoi.id);
@@ -418,7 +350,7 @@ void computeAOI(frame_AOI_info &frame_history, AOI current_aoi, int highestId = 
     }
 }
 
-void find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_labels, const cv::Mat &gray_orig, frame_AOI_info &frame_history, bool debug_level = 0)
+/*void find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_labels, const cv::Mat &gray_orig, frame_AOI_info &frame_history, bool debug_level = 0)
 {
     int WIDTH = gray_orig.cols;
     int HEIGHT = gray_orig.rows;
@@ -619,6 +551,189 @@ void find_area_of_interest(const std::string &name, const cv::Mat &labels, int n
                 }
             }
         }
+    }
+}*/
+
+void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage, const std::string &lineType, double maxDistance, bool debug_level)
+{
+    cluster_info result = cluster("FAOI: " + lineType, lineImage, debug_level);
+
+    int WIDTH = lineImage.cols;
+    int HEIGHT = lineImage.rows;
+
+    cv::Mat clustered_image = result.img;
+    cv::Mat labels_damaged = result.labels;
+    int nLabels = result.num_clusters + 1;
+    cv::Mat centroids = result.centroids;
+    cv::Mat stats = result.stats;
+
+    std::vector<std::pair<cv::Point, cv::Point>> bounding_boxs_orig;
+
+    // Vector to store the pairs
+    std::vector<std::pair<int, int>> clusterPairs;
+    std::vector<std::pair<cv::Point, cv::Point>> closestPixels;
+
+    cv::Mat damaged_area_orig_size;
+    damaged_area_orig_size = cv::Mat::zeros(lineImage.size(), CV_8U);
+
+    // find the highest id sofar
+    for (auto &aoi : frame_history.aoiList)
+    {
+        // if (aoi.id > highestId)
+        // {
+        //     highestId = aoi.id;
+        // }
+        if (aoi.matchCount > 0)
+        {
+            aoi.matchCount--;
+        }
+    }
+    frame_history.nr_of_new_AOIs.clear();
+
+    if (nLabels > 2)
+    { // nLabels includes the background as one of the labels
+        // std::cout << lineType << " Line interruptions detected! Number of clusters: " << (nLabels - 1) << std::endl;
+
+        // Mark the clusters on the image
+        cv::Mat outputImage;
+        cv::cvtColor(lineImage, outputImage, cv::COLOR_GRAY2BGR);
+
+        std::vector<Cluster> clusters;
+
+        for (int i = 1; i < nLabels; ++i)
+        {
+            int x = stats.at<int>(i, cv::CC_STAT_LEFT);
+            int y = stats.at<int>(i, cv::CC_STAT_TOP);
+            int width = stats.at<int>(i, cv::CC_STAT_WIDTH);
+            int height = stats.at<int>(i, cv::CC_STAT_HEIGHT);
+
+            Cluster cluster = {x, x + width, y, y + height, cv::Point(x + width / 2, y + height / 2)};
+            clusters.push_back(cluster);
+        }
+
+        // Function to calculate the horizontal or vertical distance between edges
+        auto distance = [&](const Cluster &a, const Cluster &b) -> double
+        {
+            if (lineType == "Horizontal")
+            {
+                return std::abs(a.rightEdge - b.leftEdge);
+            }
+            else if (lineType == "Vertical")
+            {
+                return std::abs(a.bottomEdge - b.topEdge);
+            }
+            return std::numeric_limits<double>::max();
+        };
+
+        // for(int i = 0; i < clusters.size(); ++i)
+        // {
+        //     // Show the edges of each cluster with a circle
+        //     cv::circle(outputImage, cv::Point(clusters[i].leftEdge, clusters[i].topEdge), 5, cv::Scalar(0, 255, 0), 2);
+        //     cv::circle(outputImage, cv::Point(clusters[i].rightEdge, clusters[i].bottomEdge), 5, cv::Scalar(0, 0, 255), 2);
+        // }
+
+        std::vector<bool> pairedLeft(clusters.size(), false);
+        std::vector<bool> pairedRight(clusters.size(), false);
+
+        // Pair clusters based on their proximity and draw lines between closest pairs
+        while (std::count(pairedLeft.begin(), pairedLeft.end(), false) > 1 ||
+               std::count(pairedRight.begin(), pairedRight.end(), false) > 1)
+        {
+            double minDistance = std::numeric_limits<double>::max();
+            int minIndex1 = -1;
+            int minIndex2 = -1;
+            bool isLeftEdge = false;
+
+            for (int i = 0; i < clusters.size(); ++i)
+            {
+                if (pairedRight[i])
+                    continue;
+                for (int j = 0; j < clusters.size(); ++j)
+                {
+                    if (i == j || pairedLeft[j])
+                        continue;
+                    double dist = distance(clusters[i], clusters[j]);
+                    if (dist < minDistance && dist <= maxDistance)
+                    {
+                        minDistance = dist;
+                        minIndex1 = i;
+                        minIndex2 = j;
+                        isLeftEdge = true;
+                    }
+                }
+            }
+
+            cv::Point pt1 = cv::Point(clusters[minIndex1].rightEdge, (clusters[minIndex1].topEdge + clusters[minIndex1].bottomEdge) / 2);
+            cv::Point pt2 = cv::Point(clusters[minIndex2].leftEdge, (clusters[minIndex2].topEdge + clusters[minIndex2].bottomEdge) / 2);
+            cv::Point pt3 = cv::Point((clusters[minIndex1].leftEdge + clusters[minIndex1].rightEdge) / 2, clusters[minIndex1].bottomEdge);
+            cv::Point pt4 = cv::Point((clusters[minIndex2].leftEdge + clusters[minIndex2].rightEdge) / 2, clusters[minIndex2].topEdge);
+
+            int highestId = 0;
+            for (auto &aoi : frame_history.aoiList)
+            {
+                if (aoi.id > highestId)
+                {
+                    highestId = aoi.id;
+                }
+            }
+
+            if (minIndex1 != -1 && minIndex2 != -1)
+            {
+                if (lineType == "Horizontal")
+                {
+                    // The are most likely two rebars in the picture. 
+                    // Without this if statement the program would draw a line between the two rebars
+                    if (!(euclideanDistance(pt1, pt2) > 100))
+                    {
+                        int x1 = clamp(pt1.x - 10, 0, WIDTH - 1);
+                        int y1 = clamp(pt1.y - 10, 0, HEIGHT - 1);
+                        int x2 = clamp(pt2.x + 10, 0, WIDTH - 1);
+                        int y2 = clamp(pt2.y + 10, 0, HEIGHT - 1);
+
+                        cv::line(outputImage, pt1, pt2, cv::Scalar(0, 0, 255), 2);
+                        cv::rectangle(outputImage, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 255, 255), 2);
+
+                        AOI current_aoi;
+                        current_aoi.closest_pixels_pair = std::make_pair(pt1, pt2);
+                        current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
+                        computeAOI(frame_history, current_aoi, highestId);
+                    }
+                }
+                else if (lineType == "Vertical")
+                {
+                    if (!(euclideanDistance(pt3, pt4) > 100))
+                    {
+
+                        int x1 = clamp(pt3.x - 10, 0, WIDTH - 1);
+                        int y1 = clamp(pt3.y - 10, 0, HEIGHT - 1);
+                        int x2 = clamp(pt4.x + 10, 0, WIDTH - 1);
+                        int y2 = clamp(pt4.y + 10, 0, HEIGHT - 1);
+
+                        cv::line(outputImage, pt3, pt4, cv::Scalar(0, 0, 255), 2);
+                        cv::rectangle(outputImage, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 255), 2);
+
+                        AOI current_aoi;
+                        current_aoi.closest_pixels_pair = std::make_pair(pt3, pt4);
+                        current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
+                        computeAOI(frame_history, current_aoi, highestId);
+                    }
+                }
+                pairedRight[minIndex1] = true;
+                pairedLeft[minIndex2] = true;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // Show the result
+        cv::imshow(lineType + " Lines with Interruptions", outputImage);
+        cv::waitKey(1);
+    }
+    else
+    {
+        // std::cout << "No interruptions detected in " << lineType << " lines." << std::endl;
     }
 }
 

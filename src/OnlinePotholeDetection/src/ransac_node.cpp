@@ -29,6 +29,7 @@
 // Custom code
 #include <rebar_seg.h>
 
+
 bool aligned_depth = false;
 
 class RansacNode
@@ -274,10 +275,11 @@ public:
         cv::Mat thresholded_image;
         cv::threshold(rotated_image, thresholded_image, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
         // Apply opencv ximgproc thinning algorithm
-        cv::ximgproc::thinning(rotated_image, thinned_image);
+        // cv::ximgproc::thinning(rotated_image, thinned_image);
 
         // Call the split_horizontal_and_vertical function
-        resulting_split = split_horizontal_and_vertical(thinned_image, 5, show_split_image);
+        // resulting_split = split_horizontal_and_vertical(thinned_image, 5, show_split_image);
+        resulting_split = split_horizontal_and_vertical(gray_orig, 5, show_split_image);
 
         verticalProcess();
         horizontalProcess();
@@ -294,6 +296,7 @@ public:
         {
             if (aoi.confidence >= required_confidence)
             {
+                cv::putText(img, std::to_string(aoi.id), (aoi.bounding_box.first + cv::Point(-10, -10)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 2);
                 cv::line(img, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(0, 0, 255), 2);
                 cv::rectangle(img, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(0, 255, 0), 2);
                 cv::putText(img, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(25, +25)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
@@ -304,6 +307,7 @@ public:
 
             if (aoi.confidence >= required_confidence)
             {
+                cv::putText(img, std::to_string(aoi.id), (aoi.bounding_box.first + cv::Point(-10, -10)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 2);
                 cv::line(img, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(255, 0, 0), 2);
                 cv::rectangle(img, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(255, 255, 0), 2);
                 cv::putText(img, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(0, -5)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
@@ -317,32 +321,38 @@ public:
     {
         // Extract the results
         cv::Mat pruned_vertical = resulting_split.first;
-        cv::Mat reconstructed_vertical_skeleton = reconstruct_skeleton("Vertical", pruned_vertical, thinned_image, 3, reconstruction_iterations, show_reconstructed_image);
-        cv::Mat clean_vertical = remove_small_blobs("Vertical", reconstructed_vertical_skeleton, skeleton_pieces, show_image_without_blobs);
-        cv::Mat back_rotated_image_vertical = rotate_image("Vertical - reverse rotation", clean_vertical, -angles.second, show_rotated_image);
-        cv::Mat thresholded_image_vertical;
-        cv::threshold(back_rotated_image_vertical, thresholded_image_vertical, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-        cv::ximgproc::thinning(thresholded_image_vertical, vertical);
-        cluster_info result_clustering_vertical = cluster("Vertical", vertical, show_clusters);
-        cv::Mat vertical_labels = result_clustering_vertical.labels;
-        int num_labels_vertical = result_clustering_vertical.num_clusters;
-        find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, frames_history_vertical, show_roi);
+        detectInterruptions(frames_history_vertical, pruned_vertical, "Vertical", 70, show_roi);
+        // // cv::Mat reconstructed_vertical_skeleton = reconstruct_skeleton("Vertical", pruned_vertical, thinned_image, 3, reconstruction_iterations, show_reconstructed_image);
+        // // cv::Mat clean_vertical = remove_small_blobs("Vertical", reconstructed_vertical_skeleton, skeleton_pieces, show_image_without_blobs);
+        // // cv::Mat back_rotated_image_vertical = rotate_image("Vertical - reverse rotation", clean_vertical, -angles.second, show_rotated_image);
+        // cv::Mat back_rotated_image_vertical = rotate_image("Vertical - reverse rotation", pruned_vertical, -angles.second, show_rotated_image);
+        // cv::Mat thresholded_image_vertical;
+        // cv::threshold(back_rotated_image_vertical, thresholded_image_vertical, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        // // cv::ximgproc::thinning(thresholded_image_vertical, vertical);
+        // // cluster_info result_clustering_vertical = cluster("Vertical", vertical, show_clusters);
+        // cluster_info result_clustering_vertical = cluster("Vertical", thresholded_image_vertical, show_clusters);
+        // cv::Mat vertical_labels = result_clustering_vertical.labels;
+        // int num_labels_vertical = result_clustering_vertical.num_clusters;
+        // find_area_of_interest("Vertical", vertical_labels, num_labels_vertical, gray_orig, frames_history_vertical, show_roi);
         frames_history_vertical.calculateConfidence();
     }
 
     void horizontalProcess()
     {
         cv::Mat pruned_horizontal = resulting_split.second;
-        cv::Mat reconstructed_horizontal_skeleton = reconstruct_skeleton("Horizontal", pruned_horizontal, thinned_image, 3, reconstruction_iterations, show_reconstructed_image);
-        cv::Mat clean_horizontal = remove_small_blobs("Horizontal", reconstructed_horizontal_skeleton, skeleton_pieces, show_image_without_blobs);
-        cv::Mat back_rotated_image_horizontal = rotate_image("Horizontal - reverse rotation", clean_horizontal, -angles.second, show_rotated_image);
-        cv::Mat thresholded_image_horizontal;
-        cv::threshold(back_rotated_image_horizontal, thresholded_image_horizontal, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-        cv::ximgproc::thinning(thresholded_image_horizontal, horizontal);
-        cluster_info result_clustering_horizontal = cluster("Horizontal", horizontal, show_clusters);
-        cv::Mat horizontal_labels = result_clustering_horizontal.labels;
-        int num_labels_horizontal = result_clustering_horizontal.num_clusters;
-        find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, frames_history_horizontal, show_roi);
+        detectInterruptions(frames_history_horizontal, pruned_horizontal, "Horizontal", 70, show_roi);
+        // // cv::Mat reconstructed_horizontal_skeleton = reconstruct_skeleton("Horizontal", pruned_horizontal, thinned_image, 3, reconstruction_iterations, show_reconstructed_image);
+        // // cv::Mat clean_horizontal = remove_small_blobs("Horizontal", reconstructed_horizontal_skeleton, skeleton_pieces, show_image_without_blobs);
+        // // cv::Mat back_rotated_image_horizontal = rotate_image("Horizontal - reverse rotation", clean_horizontal, -angles.second, show_rotated_image);
+        // cv::Mat back_rotated_image_horizontal = rotate_image("Horizontal - reverse rotation", pruned_horizontal, -angles.second, show_rotated_image);
+        // cv::Mat thresholded_image_horizontal;
+        // cv::threshold(back_rotated_image_horizontal, thresholded_image_horizontal, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        // // cv::ximgproc::thinning(thresholded_image_horizontal, horizontal);
+        // // cluster_info result_clustering_horizontal = cluster("Horizontal", horizontal, show_clusters);
+        // // cluster_info result_clustering_horizontal = cluster("Horizontal", thresholded_image_horizontal, show_clusters);
+        // cv::Mat horizontal_labels = result_clustering_horizontal.labels;
+        // int num_labels_horizontal = result_clustering_horizontal.num_clusters;
+        // find_area_of_interest("Horizontal", horizontal_labels, num_labels_horizontal, gray_orig, frames_history_horizontal, show_roi);
         frames_history_horizontal.calculateConfidence();
     }
 
@@ -355,8 +365,8 @@ public:
         skeleton_pieces = config.skeleton_pieces;
         reconstruction_iterations = config.reconstruction_iterations;
 
-            // Flags for showing images
-            show_orig_image = config.show_orig_image;
+        // Flags for showing images
+        show_orig_image = config.show_orig_image;
         show_rotated_image = config.show_rotated_image;
         show_split_image = config.show_split_image;
         show_reconstructed_image = config.show_reconstructed_image;
@@ -365,7 +375,7 @@ public:
         show_roi = config.show_roi;
         show_final_image = config.show_final_image;
         show_angles = config.show_angles;
-        required_confidence = config.required_confidence / (double)20;
+        required_confidence = config.required_confidence / (double)HISTORY;
     }
 
 private:
@@ -401,7 +411,7 @@ private:
 
     // Dynamic reconfigure variables
     double ransac_threshold = 0.03;
-    int min_cluster_size = 350;
+    int min_cluster_size = 150;
     double required_confidence = 0.7;
     int skeleton_pieces = 70;
     int reconstruction_iterations = 7;
