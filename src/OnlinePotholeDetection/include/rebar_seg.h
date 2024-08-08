@@ -13,6 +13,7 @@
 #include <deque>
 #include <limits>
 #include <algorithm>
+#include <visualization_msgs/Marker.h>
 
 #define HISTORY 25
 
@@ -23,6 +24,15 @@ struct cluster_info
     cv::Mat labels;
     cv::Mat stats;
     cv::Mat centroids;
+};
+
+struct Cluster
+{
+    int leftEdge;
+    int rightEdge;
+    int topEdge;
+    int bottomEdge;
+    cv::Point centroid;
 };
 
 struct AOI
@@ -52,6 +62,7 @@ struct frame_AOI_info
 {
     std::vector<AOI> aoiList;
     std::vector<int> nr_of_new_AOIs;
+    std::string ns;
 
     // Method to add an AOI to the list
     void addAOI(const AOI &aoi)
@@ -76,20 +87,25 @@ struct frame_AOI_info
     }
 };
 
-struct Cluster {
-    int leftEdge;
-    int rightEdge;
-    int topEdge;
-    int bottomEdge;
-    cv::Point centroid;
-};
+// struct Colors
+// {
+//     const float RED[4] = {1, 1, 0, 0};
+//     const float GREEN[4] = {1, 0, 1, 0};
+//     const float BLUE[4] = {1, 0, 0, 1};
+//     const float YELLOW[4] = {1, 1, 1, 0};
+//     const float ORANGE[4] = {1, 1, 0.5f, 0};
+//     const float CYAN[4] = {1, 0, 1, 1};
+//     const float MAGENTA[4] = {1, 1, 0, 1};
+//     const float WHITE[4] = {1, 1, 1, 1};
+//     const float BLACK[4] = {1, 0, 0, 0};
+// };
 
 std::pair<double, double> find_rotation(cv::Mat &image, bool debug_level);
 cv::Mat rotate_image(const std::string &name, const cv::Mat &image, double angle, bool debug_level);
 std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, int left_right_num, bool debug_level);
-cv::Mat reconstruct_skeleton(const std::string &name, const cv::Mat &src, const cv::Mat &orig, int ksize, int iterations, int debug_level);
-cv::Mat remove_small_blobs(const std::string &name, const cv::Mat &img, int min_blob_size, bool debug_level);
 cluster_info cluster(const std::string &name, const cv::Mat &img, bool debug_level);
-void find_area_of_interest(const std::string &name, const cv::Mat &labels, int num_labels, const cv::Mat &gray_orig, frame_AOI_info &frame_history, bool debug_level);
-void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage, const std::string &lineType, double maxDistance, bool debug_level);
+void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage, const std::string &lineType, double maxDistance, bool debug_level, bool show_clusters);
+cv::Point3f pixel_to_camera(int u, int v, float Z);
 std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat &img, const cv::Mat &depth_image, const cv::Mat &labels, const cv::Mat &K_inv, double Z);
+void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, ros::Publisher &pub,
+                  const std::vector<int> &color);
