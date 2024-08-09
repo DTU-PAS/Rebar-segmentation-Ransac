@@ -396,12 +396,21 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
 
 cv::Point3f pixel_to_camera(int u, int v, float Z)
 {
-
-    cv::Mat K = (cv::Mat_<double>(3, 3) << 465.33203125, 0, 353.9921875, 0, 465.33203125, 251.28125, 0, 0, 1);
+    // [ 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0 ]
+    cv::Mat K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0, 428.92486572265625, 0, 431.6277160644531, 233.90313720703125, 0, 0, 1);
+    // cv::Mat K = (cv::Mat_<double>(3, 3) << 465.33203125, 0, 353.9921875, 0, 465.33203125, 251.28125, 0, 0, 1);
     cv::Mat K_inv = K.inv();
     cv::Mat pixel_coords = (cv::Mat_<double>(3, 1) << u, v, 1);
     cv::Mat camera_coords = K_inv * pixel_coords * Z;
     return cv::Point3f(camera_coords.at<double>(0, 0), camera_coords.at<double>(1, 0), camera_coords.at<double>(2, 0));
+}
+
+void deleteMarkers(ros::Publisher &pub)
+{
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "camera_color_optical_frame";
+    marker.action = visualization_msgs::Marker::DELETEALL;
+    pub.publish(marker);
 }
 
 void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, ros::Publisher &pub,
@@ -411,6 +420,7 @@ void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns,
     marker.header.frame_id = "camera_color_optical_frame";
     marker.header.stamp = ros::Time::now();
     marker.ns = ns;
+    marker.lifetime = ros::Duration(1);
 
     marker.type = visualization_msgs::Marker::SPHERE;
 

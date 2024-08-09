@@ -42,6 +42,14 @@ public:
         ball_pub = nh.advertise<visualization_msgs::Marker>("/ball", 1);
 
         pointcloud_sub = nh.subscribe("/camera/depth/color/points", 1, &RansacNode::pointcloud_callback, this);
+        // if (aligned_depth)
+        // {
+        //     camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
+        // }
+        // else
+        // {
+        //     camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
+        // }
         camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
         // camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
         rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
@@ -88,9 +96,13 @@ public:
         // If the dot product is less than or equal to 0, the point is kept
         // That means the point is on the side of the plane where the normal is pointing
 
+        // Also calculate the average distance of the kept points to the plane
+
         std::vector<double> a{
             coefficients->values[0], coefficients->values[1], coefficients->values[2], coefficients->values[3]};
         double dot_product = 0;
+        double total_distance_to_background = 0.0;
+        double total_distance_to_camera = 0.0;
         std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> kept_points;
         std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> non_kept_points;
         for (size_t i = 0; i < outlier_cloud->points.size(); ++i)
@@ -98,15 +110,30 @@ public:
             pcl::PointXYZ point = outlier_cloud->points[i];
             std::vector<double> b{point.x, point.y, point.z, 1};
             dot_product = std::inner_product(std::begin(a), std::end(a), std::begin(b), 0.0);
-            if (dot_product <= 0)
+            if (dot_product <= 0 && dot_product >= -0.2)
             {
                 kept_points.push_back(point);
+                double distance_to_background = std::abs(dot_product) / std::sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+                total_distance_to_background += distance_to_background;
+
+                double distance_to_camera = std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
+                total_distance_to_camera += distance_to_camera;
             }
             else
             {
                 non_kept_points.push_back(point);
             }
         }
+
+        if (!kept_points.empty())
+        {
+            average_distance_to_background = total_distance_to_background / kept_points.size();
+            average_distance_to_camera = total_distance_to_camera / kept_points.size();
+        }
+
+        // ROS_INFO("Average distance to background: %f", average_distance_to_background);
+        // ROS_INFO("Average distance to camera: %f", average_distance_to_camera);
+
         // Add non-kept points to inlier_cloud
         inlier_cloud->points.insert(inlier_cloud->points.end(), non_kept_points.begin(), non_kept_points.end());
         inlier_cloud->width = inlier_cloud->points.size();
@@ -175,9 +202,6 @@ public:
         {
             cv_ptr = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1);
             depth_image = cv_ptr->image;
-            // cv::imshow("Depth Image", depth_image);
-            // cv::waitKey(1);
-            // ROS_INFO("Depth image: %i, %i", depth_image.rows, depth_image.cols);
         }
         catch (cv_bridge::Exception &e)
         {
@@ -226,7 +250,9 @@ public:
         detect_AOI();
 
         if (image_msg->data.size() != img_height * img_width * 3)
+        {
             ROS_ERROR("data size: %lu (should be: %i)", image_msg->data.size(), img_height * img_width * 3);
+        }
         // Publish the image message
         label_pub.publish(image_msg);
     }
@@ -236,15 +262,15 @@ public:
         //  Convert the image to grayscale
         cv::cvtColor(main_img, gray_orig, cv::COLOR_RGB2GRAY);
 
-        if (!aligned_depth)
-        {
-            // Dialate image to remove small holes
-            cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-            cv::dilate(gray_orig, gray_orig, kernel);
+        // if (aligned_depth)
+        // {
+        //     // Dialate image to remove small holes
+        //     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+        //     cv::dilate(gray_orig, gray_orig, kernel);
 
-            // Erode image to remove small blobs
-            cv::erode(gray_orig, gray_orig, kernel);
-        }
+        //     // Erode image to remove small blobs
+        //     cv::erode(gray_orig, gray_orig, kernel);
+        // }
 
         // Cluster the image and remove small clusters
         cv::Mat labels, stats, centroids;
@@ -368,13 +394,20 @@ public:
 
     void publish_to_3d(frame_AOI_info frame_history)
     {
+        // deleteMarkers(ball_pub);
         for (size_t i = 0; i < frame_history.aoiList.size(); ++i)
         {
             if (frame_history.aoiList[i].confidence >= required_confidence)
             {
-                // Translate closest pixel pair to 3d coordinates
-                int v = frame_history.aoiList[i].closest_pixels_pair.first.y;
-                int u = frame_history.aoiList[i].closest_pixels_pair.first.x;
+                // // Translate closest pixel pair to 3d coordinates
+
+                // calculate the middle between the two closest pixels
+
+                int v = (frame_history.aoiList[i].closest_pixels_pair.first.y + frame_history.aoiList[i].closest_pixels_pair.second.y) / 2;
+                int u = (frame_history.aoiList[i].closest_pixels_pair.first.x + frame_history.aoiList[i].closest_pixels_pair.second.x) / 2;
+
+                // int v = frame_history.aoiList[i].closest_pixels_pair.second.y;
+                // int u = frame_history.aoiList[i].closest_pixels_pair.second.x;
                 // ROS_INFO("v, u: %i, %i", v, u);
                 if (depth_image.empty())
                 {
@@ -406,55 +439,19 @@ public:
                 // float Z = depth_image.at<uint16_t>(u, v) * 0.001f;
 
                 // ROS_INFO("Depth: %f", Z);
+                // auto coord = pixel_to_camera(u, v, Z + average_distance);
                 auto coord = pixel_to_camera(u, v, Z);
 
                 if (frame_history.ns == "Vertical")
                 {
-                    publish_ball(coord, 0.05, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 0, 1, 1});
+                    publish_ball(coord, 0.01, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 0, 1, 1});
                 }
                 else if (frame_history.ns == "Horizontal")
                 {
-                    publish_ball(coord, 0.05, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 0, 0, 1});
+                    publish_ball(coord, 0.01, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 1, 0, 1});
                 }
             }
         }
-        // // Translate closest pixel pair to 3d coordinates
-        // int v = frame_history.aoiList[0].closest_pixels_pair.first.y;
-        // int u = frame_history.aoiList[0].closest_pixels_pair.first.x;
-        // ROS_INFO("v, u: %i, %i", v, u);
-        // if (depth_image.empty())
-        // {
-        //     ROS_ERROR("Depth image is empty");
-        //     return;
-        // }
-
-        // // Take the average depth of the sourrounding pixels 8 connectivity
-
-        // std::vector<float> Z_values;
-        // for (int i = -1; i < 2; ++i)
-        // {
-        //     for (int j = -1; j < 2; ++j)
-        //     {
-        //         if (v + i >= 0 && v + i < depth_image.rows && u + j >= 0 && u + j < depth_image.cols)
-        //         {
-        //             Z_values.push_back(depth_image.at<float>(v + i, u + j) * 0.001f);
-        //         }
-        //     }
-        // }
-
-        // float Z = 0;
-
-        // if (Z_values.size() > 0)
-        // {
-        //     Z = std::accumulate(Z_values.begin(), Z_values.end(), 0.0) / Z_values.size();
-        // }
-
-        // // float Z = depth_image.at<uint16_t>(u, v) * 0.001f;
-
-        // // ROS_INFO("Depth: %f", Z);
-        // auto coord = pixel_to_camera(u, v, Z);
-
-        // publish_ball(coord, 0.05, 0, "ball", ball_pub, {1, 1, 0, 0});
     }
 
     void dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
@@ -479,6 +476,8 @@ private:
     unsigned int img_height;
     unsigned int img_width;
     std_msgs::Header img_header;
+    double average_distance_to_background;
+    double average_distance_to_camera;
 
     // Publishers
     ros::Publisher inlier_pub;
@@ -508,7 +507,7 @@ private:
     frame_AOI_info frames_history_horizontal;
 
     // Dynamic reconfigure variables
-    double ransac_threshold = 0.03;
+    double ransac_threshold = 0.02;
     int min_cluster_size = 150;
     double required_confidence = 0.7;
 
@@ -532,16 +531,16 @@ int main(int argc, char **argv)
     ros::master::getTopics(master_topics);
 
     // If topic aligned_depth_to_color/camera_info is available, use it set flag aligned_depth to true
-    for (ros::master::V_TopicInfo::iterator it = master_topics.begin(); it != master_topics.end(); it++)
-    {
-        const ros::master::TopicInfo &info = *it;
-        if (info.name == "/camera/aligned_depth_to_color/camera_info")
-        {
-            ROS_INFO("Aligned depth to color camera info topic found");
-            aligned_depth = true;
-            break;
-        }
-    }
+    // for (ros::master::V_TopicInfo::iterator it = master_topics.begin(); it != master_topics.end(); it++)
+    // {
+    //     const ros::master::TopicInfo &info = *it;
+    //     if (info.name == "/camera/aligned_depth_to_color/camera_info")
+    //     {
+    //         ROS_INFO("Aligned depth to color camera info topic found");
+    //         aligned_depth = true;
+    //         break;
+    //     }
+    // }
 
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig> server;
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig>::CallbackType f;
