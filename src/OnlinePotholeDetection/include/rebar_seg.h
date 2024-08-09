@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <visualization_msgs/Marker.h>
 
-#define HISTORY 25
+#define HISTORY 15
 
 struct cluster_info
 {
@@ -102,6 +102,7 @@ struct frame_AOI_info
 
 std::pair<double, double> find_rotation(cv::Mat &image, bool debug_level);
 cv::Mat rotate_image(const std::string &name, const cv::Mat &image, double angle, bool debug_level);
+cv::Point rotate_point(const std::string &name, const cv::Point point, cv::Point2f center, double angle, bool debug_level);
 std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, int left_right_num, bool debug_level);
 cluster_info cluster(const std::string &name, const cv::Mat &img, bool debug_level);
 void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage, const std::string &lineType, double maxDistance, bool debug_level, bool show_clusters);
@@ -109,4 +110,4 @@ cv::Point3f pixel_to_camera(int u, int v, float Z);
 std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat &img, const cv::Mat &depth_image, const cv::Mat &labels, const cv::Mat &K_inv, double Z);
 void deleteMarkers(ros::Publisher &pub);
 void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, ros::Publisher &pub,
-                                                          const std::vector<int> &color);
+                  const std::vector<int> &color);

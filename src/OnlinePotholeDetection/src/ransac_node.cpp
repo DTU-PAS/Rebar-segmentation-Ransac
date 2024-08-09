@@ -42,14 +42,6 @@ public:
         ball_pub = nh.advertise<visualization_msgs::Marker>("/ball", 1);
 
         pointcloud_sub = nh.subscribe("/camera/depth/color/points", 1, &RansacNode::pointcloud_callback, this);
-        // if (aligned_depth)
-        // {
-        //     camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
-        // }
-        // else
-        // {
-        //     camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
-        // }
         camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
         // camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
         rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
@@ -60,6 +52,22 @@ public:
         // camera_info_sub = nh.subscribe("/stereo/left/camera_info", 1, &RansacNode::camera_info_callback, this);
         // rgb_sub = nh.subscribe("/stereo/left/image_rect_color", 1, &RansacNode::rgb_callback, this);
         // depth_sub = nh.subscribe("/stereo/depth", 1, &RansacNode::depth_callback, this);
+    }
+
+    void dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
+    {
+        ransac_threshold = config.ransac_threshold / (double)1000;
+        min_cluster_size = config.min_cluster_size;
+
+        additional_angle = config.additional_angle;
+
+        // Flags for showing images
+        show_rotated_image = config.show_rotated_image;
+        show_split_image = config.show_split_image;
+        show_clusters = config.show_clusters;
+        show_roi = config.show_roi;
+        show_angles = config.show_angles;
+        required_confidence = config.required_confidence / (double)HISTORY;
     }
 
     void pointcloud_callback(const sensor_msgs::PointCloud2ConstPtr &input)
@@ -171,7 +179,7 @@ public:
         img_width = msg->width;
         img_header = msg->header;
 
-        // ROS_INFO("height, width: %i, %i", img_height, img_width);
+        ROS_INFO("height, width: %i, %i", img_height, img_width);
 
         // ROS_INFO("Intrinsic Parameters:");
         // ROS_INFO("  fx: %f", fx);
@@ -311,7 +319,7 @@ public:
         {
             if (aoi.confidence >= required_confidence)
             {
-                cv::putText(rotated_image, std::to_string(aoi.id), (aoi.bounding_box.first + cv::Point(-10, -10)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 2);
+                cv::putText(rotated_image, std::to_string(aoi.id) + "V", (aoi.bounding_box.first + cv::Point(-10, -10)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 2);
                 cv::line(rotated_image, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(0, 0, 255), 2);
                 cv::rectangle(rotated_image, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(0, 255, 0), 2);
                 cv::putText(rotated_image, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(25, +25)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
@@ -322,7 +330,7 @@ public:
 
             if (aoi.confidence >= required_confidence)
             {
-                cv::putText(rotated_image, std::to_string(aoi.id), (aoi.bounding_box.first + cv::Point(-10, -10)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 2);
+                cv::putText(rotated_image, std::to_string(aoi.id) + "H", (aoi.bounding_box.first + cv::Point(-15, -15)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 2);
                 cv::line(rotated_image, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(255, 0, 0), 2);
                 cv::rectangle(rotated_image, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(255, 255, 0), 2);
                 cv::putText(rotated_image, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(0, -5)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
@@ -331,49 +339,13 @@ public:
 
         cv::Mat back_rotated_image = rotate_image("Vertical - reverse rotation", rotated_image, -angles.second, show_rotated_image);
 
+        putText(back_rotated_image, "Min. confidence: " + std::to_string(required_confidence), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
+
         cv::imshow("Projected_Image", back_rotated_image);
         cv::waitKey(1);
 
         publish_to_3d(frames_history_vertical);
         publish_to_3d(frames_history_horizontal);
-
-        // Translate closest pixel pair to 3d coordinates
-        // int v = frames_history_vertical.aoiList[0].closest_pixels_pair.first.y;
-        // int u = frames_history_vertical.aoiList[0].closest_pixels_pair.first.x;
-        // ROS_INFO("v, u: %i, %i", v, u);
-        // if (depth_image.empty())
-        // {
-        //     ROS_ERROR("Depth image is empty");
-        //     return;
-        // }
-
-        // // Take the average depth of the sourrounding pixels 8 connectivity
-
-        // std::vector<float> Z_values;
-        // for (int i = -1; i < 2; ++i)
-        // {
-        //     for (int j = -1; j < 2; ++j)
-        //     {
-        //         if (v + i >= 0 && v + i < depth_image.rows && u + j >= 0 && u + j < depth_image.cols)
-        //         {
-        //             Z_values.push_back(depth_image.at<float>(v + i, u + j) * 0.001f);
-        //         }
-        //     }
-        // }
-
-        // float Z = 0;
-
-        // if (Z_values.size() > 0)
-        // {
-        //     Z = std::accumulate(Z_values.begin(), Z_values.end(), 0.0) / Z_values.size();
-        // }
-
-        // // float Z = depth_image.at<uint16_t>(u, v) * 0.001f;
-
-        // // ROS_INFO("Depth: %f", Z);
-        // auto coord = pixel_to_camera(u, v, Z);
-
-        // publish_ball(coord, 0.05, 0, "ball", ball_pub, {1, 1, 0, 0});
     }
 
     void verticalProcess()
@@ -406,9 +378,19 @@ public:
                 int v = (frame_history.aoiList[i].closest_pixels_pair.first.y + frame_history.aoiList[i].closest_pixels_pair.second.y) / 2;
                 int u = (frame_history.aoiList[i].closest_pixels_pair.first.x + frame_history.aoiList[i].closest_pixels_pair.second.x) / 2;
 
+                std::cout << "Before v: " << v << " u: " << u << std::endl;
+
+                cv::Point2f center = cv::Point2f(1280 / 2.0, 720 / 2.0);
+
+                cv::Point rotated_point = rotate_point(frame_history.ns, cv::Point(v, u), center, -angles.second + additional_angle, 0);
+
+                v = rotated_point.x;
+                u = rotated_point.y;
+
+                std::cout << "After v: " << v << " u: " << u << std::endl;
+
                 // int v = frame_history.aoiList[i].closest_pixels_pair.second.y;
                 // int u = frame_history.aoiList[i].closest_pixels_pair.second.x;
-                // ROS_INFO("v, u: %i, %i", v, u);
                 if (depth_image.empty())
                 {
                     ROS_ERROR("Depth image is empty");
@@ -436,11 +418,11 @@ public:
                     Z = std::accumulate(Z_values.begin(), Z_values.end(), 0.0) / Z_values.size();
                 }
 
-                // float Z = depth_image.at<uint16_t>(u, v) * 0.001f;
-
                 // ROS_INFO("Depth: %f", Z);
                 // auto coord = pixel_to_camera(u, v, Z + average_distance);
                 auto coord = pixel_to_camera(u, v, Z);
+
+                std::cout << "X: " << coord.x << " Y: " << coord.y << " Z: " << coord.z << std::endl;
 
                 if (frame_history.ns == "Vertical")
                 {
@@ -452,20 +434,6 @@ public:
                 }
             }
         }
-    }
-
-    void dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
-    {
-        ransac_threshold = config.ransac_threshold / (double)1000;
-        min_cluster_size = config.min_cluster_size;
-
-        // Flags for showing images
-        show_rotated_image = config.show_rotated_image;
-        show_split_image = config.show_split_image;
-        show_clusters = config.show_clusters;
-        show_roi = config.show_roi;
-        show_angles = config.show_angles;
-        required_confidence = config.required_confidence / (double)HISTORY;
     }
 
 private:
@@ -510,6 +478,7 @@ private:
     double ransac_threshold = 0.02;
     int min_cluster_size = 150;
     double required_confidence = 0.7;
+    double additional_angle = 0;
 
     // Flags for showing images
     bool show_orig_image = false;

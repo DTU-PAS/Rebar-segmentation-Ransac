@@ -78,6 +78,27 @@ cv::Mat rotate_image(const std::string &name, const cv::Mat &image, double angle
     return rotated;
 }
 
+// Rotate a 2d point around the origin
+cv::Point rotate_point(const std::string &name, const cv::Point point, cv::Point2f center, double angle, bool debug_level)
+{
+    // Get the rotation matrix
+    cv::Mat M = cv::getRotationMatrix2D(center, angle, 1);
+
+    // Rotate the point 
+    double x = point.x * M.at<double>(0, 0) + point.y * M.at<double>(0, 1) + M.at<double>(0, 2);
+    double y = point.x * M.at<double>(1, 0) + point.y * M.at<double>(1, 1) + M.at<double>(1, 2);
+
+    
+
+    if (debug_level)
+    {
+        ROS_INFO("Original Point: (%d, %d)", point.x, point.y);
+        ROS_INFO("Rotated Point: (%f, %f)", x, y);
+    }
+
+    return cv::Point(x, y);
+}
+
 std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, int left_right_num, bool debug_level)
 {
 
