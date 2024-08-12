@@ -99,28 +99,68 @@ cv::Point rotate_point(const std::string &name, const cv::Point point, cv::Point
     return cv::Point(x, y);
 }
 
-std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, int left_right_num, bool debug_level)
+std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, std::pair<double, double> angles, int kernelsize, bool debug_level)
 {
 
     // Step 2: Detect Horizontal Lines
-    cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(25, 1));
+    cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(kernelsize, 1));
     cv::Mat horizontalLines;
     cv::morphologyEx(image, horizontalLines, cv::MORPH_OPEN, horizontalKernel);
 
     // Step 3: Detect Vertical Lines
-    cv::Mat verticalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, 25));
+    cv::Mat verticalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, kernelsize));
     cv::Mat verticalLines;
     cv::morphologyEx(image, verticalLines, cv::MORPH_OPEN, verticalKernel);
 
     if (debug_level)
     {
-        cv::imshow("Detected Horizontal Lines", horizontalLines);
-        cv::imshow("Detected Vertical Lines", verticalLines);
-        cv::waitKey(1);
+    cv::imshow("Detected Horizontal Lines", horizontalLines);
+    cv::imshow("Detected Vertical Lines", verticalLines);
+    cv::waitKey(1);
     }
 
     return std::make_pair(verticalLines, horizontalLines);
 }
+
+// std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, std::pair<double, double> angles, int left_right_num, bool debug_level)
+// {
+
+//     // Create a horizontal kernel
+//     cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(25, 1));
+
+//     // Create a larger square kernel that can accommodate the rotation
+//     int kernelSize = std::max(horizontalKernel.cols, horizontalKernel.rows) * 2;
+//     cv::Mat largeKernel = cv::Mat::zeros(kernelSize, kernelSize, CV_8UC1);
+
+//     // Place the horizontal kernel at the center of the larger kernel
+//     horizontalKernel.copyTo(largeKernel(cv::Rect((kernelSize - horizontalKernel.cols) / 2, (kernelSize - horizontalKernel.rows) / 2, horizontalKernel.cols, horizontalKernel.rows)));
+
+//     // Rotate the large kernel by the known angle
+//     cv::Mat rotationMatrix = cv::getRotationMatrix2D(cv::Point2f(kernelSize / 2, kernelSize / 2), -angles.second, 1.0);
+//     cv::Mat rotatedKernel;
+//     cv::warpAffine(largeKernel, rotatedKernel, rotationMatrix, largeKernel.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0));
+
+//     // Crop the rotated kernel to remove extra black areas
+//     cv::Rect boundingBox = cv::boundingRect(rotatedKernel);
+//     rotatedKernel = rotatedKernel(boundingBox);
+//     std::cout << "Rotated Kernel: " << rotatedKernel << std::endl;
+
+//     // Apply morphology operation to detect lines with the rotated kernel
+//     cv::Mat detectedLines;
+//     cv::morphologyEx(image, detectedLines, cv::MORPH_OPEN, rotatedKernel);
+
+//     cv::imshow("Detected Horizontal Lines", detectedLines);
+//     cv::waitKey(1);
+
+//     // // Create a horizontal kernel
+//     // cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(25, 1));
+//     // cv::Mat verticalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, 25));
+//     // // Print the kernel
+//     // std::cout << "Horizontal Kernel: " << horizontalKernel << std::endl;
+//     // std::cout << "Vertical Kernel: " << verticalKernel << std::endl;
+
+//     return std::make_pair(detectedLines, detectedLines);
+// }
 
 cv::Vec3b random_color()
 {
@@ -230,9 +270,9 @@ void computeAOI(frame_AOI_info &frame_history, AOI current_aoi, int highestId = 
     }
 }
 
-void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage, const std::string &lineType, double maxDistance, bool debug_level, bool show_clusters)
+void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage, double maxDistance, int paddding, bool debug_level, bool show_clusters)
 {
-    cluster_info result = cluster("FAOI: " + lineType, lineImage, 0);
+    cluster_info result = cluster("FAOI: " + frame_history.ns, lineImage, 0);
 
     int WIDTH = lineImage.cols;
     int HEIGHT = lineImage.rows;
@@ -291,23 +331,23 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
         // Function to calculate the horizontal or vertical distance between edges
         auto distance = [&](const Cluster &a, const Cluster &b) -> double
         {
-            if (lineType == "Horizontal")
+            if (frame_history.ns == "Horizontal")
             {
                 return std::abs(a.rightEdge - b.leftEdge);
             }
-            else if (lineType == "Vertical")
+            else if (frame_history.ns == "Vertical")
             {
                 return std::abs(a.bottomEdge - b.topEdge);
             }
             return std::numeric_limits<double>::max();
         };
 
-        // for(int i = 0; i < clusters.size(); ++i)
-        // {
-        //     // Show the edges of each cluster with a circle
-        //     cv::circle(outputImage, cv::Point(clusters[i].leftEdge, clusters[i].topEdge), 5, cv::Scalar(0, 255, 0), 2);
-        //     cv::circle(outputImage, cv::Point(clusters[i].rightEdge, clusters[i].bottomEdge), 5, cv::Scalar(0, 0, 255), 2);
-        // }
+        for(int i = 0; i < clusters.size(); ++i)
+        {
+            // Show the edges of each cluster with a circle
+            cv::circle(outputImage, cv::Point(clusters[i].leftEdge, clusters[i].topEdge), 5, cv::Scalar(0, 255, 0), 2);
+            cv::circle(outputImage, cv::Point(clusters[i].rightEdge, clusters[i].bottomEdge), 5, cv::Scalar(0, 0, 255), 2);
+        }
 
         std::vector<bool> pairedLeft(clusters.size(), false);
         std::vector<bool> pairedRight(clusters.size(), false);
@@ -356,16 +396,16 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
 
             if (minIndex1 != -1 && minIndex2 != -1)
             {
-                if (lineType == "Horizontal")
+                if (frame_history.ns == "Horizontal")
                 {
                     // The are most likely two rebars in the picture.
                     // Without this if statement the program would draw a line between the two rebars
                     if (!(euclideanDistance(pt1, pt2) > 100))
                     {
-                        int x1 = clamp(pt1.x - 10, 0, WIDTH - 1);
-                        int y1 = clamp(pt1.y - 10, 0, HEIGHT - 1);
-                        int x2 = clamp(pt2.x + 10, 0, WIDTH - 1);
-                        int y2 = clamp(pt2.y + 10, 0, HEIGHT - 1);
+                        int x1 = clamp(pt1.x - paddding, 0, WIDTH - 1);
+                        int y1 = clamp(pt1.y - paddding, 0, HEIGHT - 1);
+                        int x2 = clamp(pt2.x + paddding, 0, WIDTH - 1);
+                        int y2 = clamp(pt2.y + paddding, 0, HEIGHT - 1);
 
                         cv::line(outputImage, pt1, pt2, cv::Scalar(0, 0, 255), 2);
                         cv::rectangle(outputImage, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 255, 255), 2);
@@ -376,15 +416,15 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
                         computeAOI(frame_history, current_aoi, highestId);
                     }
                 }
-                else if (lineType == "Vertical")
+                else if (frame_history.ns == "Vertical")
                 {
                     if (!(euclideanDistance(pt3, pt4) > 100))
                     {
 
-                        int x1 = clamp(pt3.x - 10, 0, WIDTH - 1);
-                        int y1 = clamp(pt3.y - 10, 0, HEIGHT - 1);
-                        int x2 = clamp(pt4.x + 10, 0, WIDTH - 1);
-                        int y2 = clamp(pt4.y + 10, 0, HEIGHT - 1);
+                        int x1 = clamp(pt3.x - paddding, 0, WIDTH - 1);
+                        int y1 = clamp(pt3.y - paddding, 0, HEIGHT - 1);
+                        int x2 = clamp(pt4.x + paddding, 0, WIDTH - 1);
+                        int y2 = clamp(pt4.y + paddding, 0, HEIGHT - 1);
 
                         cv::line(outputImage, pt3, pt4, cv::Scalar(0, 0, 255), 2);
                         cv::rectangle(outputImage, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 255), 2);
@@ -406,7 +446,7 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
 
         if (debug_level)
         {
-            cv::imshow(lineType + " Lines with Interruptions", outputImage);
+            cv::imshow(frame_history.ns + " Lines with Interruptions", outputImage);
             cv::waitKey(1);
         }
     }
@@ -415,14 +455,19 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
     }
 }
 
-cv::Point3f pixel_to_camera(int u, int v, float Z)
+cv::Point3f pixel_to_camera(cv::Mat K, int u, int v, float Z)
 {
-    // [ 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0 ]
-    cv::Mat K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0, 428.92486572265625, 0, 431.6277160644531, 233.90313720703125, 0, 0, 1);
-    // cv::Mat K = (cv::Mat_<double>(3, 3) << 465.33203125, 0, 353.9921875, 0, 465.33203125, 251.28125, 0, 0, 1);
     cv::Mat K_inv = K.inv();
     cv::Mat pixel_coords = (cv::Mat_<double>(3, 1) << u, v, 1);
     cv::Mat camera_coords = K_inv * pixel_coords * Z;
+
+    std::cout << "Depth Value: " << Z << std::endl;
+    std::cout << "Intrinsic Matrix: " << K_inv << std::endl;
+    std::cout << "Intrinsic Matrix: " << K << std::endl;
+    std::cout << "Pixel Coords: " << pixel_coords << std::endl;
+    std::cout << "Camera Coords: " << camera_coords << std::endl;
+
+
     return cv::Point3f(camera_coords.at<double>(0, 0), camera_coords.at<double>(1, 0), camera_coords.at<double>(2, 0));
 }
 

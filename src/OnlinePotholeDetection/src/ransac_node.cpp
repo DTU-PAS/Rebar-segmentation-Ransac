@@ -42,8 +42,23 @@ public:
         ball_pub = nh.advertise<visualization_msgs::Marker>("/ball", 1);
 
         pointcloud_sub = nh.subscribe("/camera/depth/color/points", 1, &RansacNode::pointcloud_callback, this);
-        camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
+        std::string camera_info_topic;
+        if (aligned_depth)
+        {
+            camera_info_topic = "/camera/aligned_depth_to_color/camera_info";
+            // camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
+        }
+        else
+        {
+            camera_info_topic = "/camera/depth/camera_info";
+            // camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
+        }
+        // camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
         // camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
+        camera_info_topic = "/camera/depth/camera_info";
+        ROS_INFO("Camera info topic: %s", camera_info_topic.c_str());
+        camera_info_sub = nh.subscribe(camera_info_topic, 1, &RansacNode::camera_info_callback, this);
+
         rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
         depth_sub = nh.subscribe("/camera/depth/image_rect_raw", 1, &RansacNode::depth_callback, this);
 
@@ -145,10 +160,26 @@ public:
         // Add non-kept points to inlier_cloud
         inlier_cloud->points.insert(inlier_cloud->points.end(), non_kept_points.begin(), non_kept_points.end());
         inlier_cloud->width = inlier_cloud->points.size();
+        inlier_cloud->height = 1; // Since it's a 1D point cloud
+        inlier_cloud->is_dense = true;
+
+        if (inlier_cloud->points.empty())
+        {
+            ROS_ERROR("Inlier cloud is empty after adding non-kept points");
+            return;
+        }
 
         // Update outlier_cloud with kept_points
         outlier_cloud->points = kept_points;
         outlier_cloud->width = kept_points.size();
+        outlier_cloud->height = 1; // Since it's a 1D point cloud
+        outlier_cloud->is_dense = true;
+
+        if (outlier_cloud->points.empty())
+        {
+            ROS_ERROR("Outlier cloud is empty after updating with kept points");
+            return;
+        }
 
         // Convert point clouds back to sensor_msgs::PointCloud2
         sensor_msgs::PointCloud2 inlier_msg;
@@ -175,11 +206,12 @@ public:
         fy = msg->K[4]; // Focal length in y direction
         cx = msg->K[2]; // Optical center x coordinate
         cy = msg->K[5]; // Optical center y coordinate
+        // Km = cv::Mat(3, 3, CV_64F, (void *)msg->K.data());
         img_height = msg->height;
         img_width = msg->width;
         img_header = msg->header;
 
-        ROS_INFO("height, width: %i, %i", img_height, img_width);
+        // ROS_INFO("height, width: %i, %i", img_height, img_width);
 
         // ROS_INFO("Intrinsic Parameters:");
         // ROS_INFO("  fx: %f", fx);
@@ -210,6 +242,8 @@ public:
         {
             cv_ptr = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1);
             depth_image = cv_ptr->image;
+            cv::imshow("Depth_Image", depth_image);
+            cv::waitKey(1);
         }
         catch (cv_bridge::Exception &e)
         {
@@ -255,6 +289,12 @@ public:
 
         main_img = img;
 
+        // Check if image is empty or not
+        if (img.empty())
+        {
+            ROS_ERROR("Image is empty");
+            return;
+        }
         detect_AOI();
 
         if (image_msg->data.size() != img_height * img_width * 3)
@@ -270,15 +310,12 @@ public:
         //  Convert the image to grayscale
         cv::cvtColor(main_img, gray_orig, cv::COLOR_RGB2GRAY);
 
-        // if (aligned_depth)
-        // {
-        //     // Dialate image to remove small holes
-        //     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-        //     cv::dilate(gray_orig, gray_orig, kernel);
+        // Dialate image to remove small holes
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2, 2));
+        cv::dilate(gray_orig, gray_orig, kernel);
 
-        //     // Erode image to remove small blobs
-        //     cv::erode(gray_orig, gray_orig, kernel);
-        // }
+        // Erode image to remove small blobs
+        cv::erode(gray_orig, gray_orig, kernel);
 
         // Cluster the image and remove small clusters
         cv::Mat labels, stats, centroids;
@@ -291,7 +328,6 @@ public:
                 gray_orig.setTo(0, mask);
             }
         }
-        float vertical_angle, horizontal_angle;
 
         angles = find_rotation(gray_orig, show_angles);
 
@@ -299,7 +335,7 @@ public:
         cv::Mat thresholded_image;
         cv::threshold(rotated_image, thresholded_image, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
-        resulting_split = split_horizontal_and_vertical(rotated_image, 5, show_split_image);
+        resulting_split = split_horizontal_and_vertical(rotated_image, angles, 60, show_split_image);
 
         verticalProcess();
         horizontalProcess();
@@ -352,7 +388,7 @@ public:
     {
         cv::Mat pruned_vertical = resulting_split.first;
         frames_history_vertical.ns = "Vertical";
-        detectInterruptions(frames_history_vertical, pruned_vertical, "Vertical", 70, show_roi, show_clusters);
+        detectInterruptions(frames_history_vertical, pruned_vertical, 70, 15, show_roi, show_clusters);
         frames_history_vertical.calculateConfidence();
     }
 
@@ -360,7 +396,7 @@ public:
     {
         cv::Mat pruned_horizontal = resulting_split.second;
         frames_history_horizontal.ns = "Horizontal";
-        detectInterruptions(frames_history_horizontal, pruned_horizontal, "Horizontal", 70, show_roi, show_clusters);
+        detectInterruptions(frames_history_horizontal, pruned_horizontal, 70, 15, show_roi, show_clusters);
         frames_history_horizontal.calculateConfidence();
     }
 
@@ -378,16 +414,43 @@ public:
                 int v = (frame_history.aoiList[i].closest_pixels_pair.first.y + frame_history.aoiList[i].closest_pixels_pair.second.y) / 2;
                 int u = (frame_history.aoiList[i].closest_pixels_pair.first.x + frame_history.aoiList[i].closest_pixels_pair.second.x) / 2;
 
-                std::cout << "Before v: " << v << " u: " << u << std::endl;
+                // std::cout << "Before v: " << v << " u: " << u << std::endl;
 
-                cv::Point2f center = cv::Point2f(1280 / 2.0, 720 / 2.0);
+                cv::Point2f center = cv::Point2f(img_width / 2.0, img_height / 2.0);
 
-                cv::Point rotated_point = rotate_point(frame_history.ns, cv::Point(v, u), center, -angles.second + additional_angle, 0);
+                // Rotation matrix 0.9999589323997498, -0.009039390832185745, -0.00062500563217327, 0.00903862714767456, 0.9999583959579468, -0.0012129932874813676, 0.0006359443068504333, 0.0012072942918166518, 0.9999990463256836
 
-                v = rotated_point.x;
-                u = rotated_point.y;
+                cv::Mat rotm = (cv::Mat_<double>(3, 3) << 0.9999589323997498, -0.009039390832185745, -0.00062500563217327,
+                                0.00903862714767456, 0.9999583959579468, -0.0012129932874813676,
+                                0.0006359443068504333, 0.0012072942918166518, 0.9999990463256836);
 
-                std::cout << "After v: " << v << " u: " << u << std::endl;
+                // Translation 0.014663135632872581, -0.0001749516377458349, 0.00017571949865669012
+
+                cv::Mat translation = (cv::Mat_<double>(3, 1) << 0.014663135632872581, -0.0001749516377458349, 0.00017571949865669012);
+
+                // Transformation matrix
+                cv::Mat transformation = cv::Mat::eye(4, 4, CV_64F);
+                rotm.copyTo(transformation(cv::Rect(0, 0, 3, 3)));
+
+                // Set translation values
+
+                for (int i = 0; i < 3; ++i)
+                {
+                    transformation.at<double>(i, 3) = translation.at<double>(i);
+                }
+
+                std::cout << "Transformation matrix: " << transformation << std::endl;
+
+                // Apply the transformation matrix to u and v
+
+                // cv::Mat uv = (cv::Mat_<double>(4, 1) << u, v, 1, 1);
+
+                // cv::Point rotated_point = rotate_point(frame_history.ns, cv::Point(v, u), center, -angles.second + additional_angle, 0);
+
+                // v = rotated_point.x;
+                // u = rotated_point.y;
+
+                // std::cout << "After v: " << v << " u: " << u << std::endl;
 
                 // int v = frame_history.aoiList[i].closest_pixels_pair.second.y;
                 // int u = frame_history.aoiList[i].closest_pixels_pair.second.x;
@@ -396,6 +459,20 @@ public:
                     ROS_ERROR("Depth image is empty");
                     return;
                 }
+
+                // Visualize u and v in the image and depth image
+                cv::circle(main_img, cv::Point(u, v), 5, cv::Scalar(0, 255, 0), -1);
+
+                // Convert the depth image to RGB for visualization
+                cv::Mat depth_image_rgb;
+                cv::cvtColor(depth_image, depth_image_rgb, cv::COLOR_GRAY2BGR);
+                cv::circle(depth_image_rgb, cv::Point(u, v), 5, cv::Scalar(0, 255, 0), -1);
+
+                cv::imshow("Depth_Image", depth_image_rgb);
+                cv::waitKey(1);
+
+                cv::imshow("Main_Image", main_img);
+                cv::waitKey(1);
 
                 // Take the average depth of the sourrounding pixels 8 connectivity
 
@@ -411,18 +488,32 @@ public:
                     }
                 }
 
-                float Z = 0;
+                float Z;
 
                 if (Z_values.size() > 0)
                 {
                     Z = std::accumulate(Z_values.begin(), Z_values.end(), 0.0) / Z_values.size();
                 }
 
-                // ROS_INFO("Depth: %f", Z);
+                ROS_INFO("Depth: %f", Z);
                 // auto coord = pixel_to_camera(u, v, Z + average_distance);
-                auto coord = pixel_to_camera(u, v, Z);
+                cv::Mat K;
+                if (aligned_depth)
+                {
+                    std::cout << "Using aligned depth K" << std::endl;
+                    K = (cv::Mat_<double>(3, 3) << 910.479248046875, 0.0, 636.556640625, 0.0, 910.8132934570312, 365.2656555175781, 0.0, 0.0, 1.0);
+                }
+                else
+                {
+                    std::cout << "Using default K" << std::endl;
+                    K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
+                }
 
-                std::cout << "X: " << coord.x << " Y: " << coord.y << " Z: " << coord.z << std::endl;
+                K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
+
+                auto coord = pixel_to_camera(K, u, v, Z);
+
+                // std::cout << "X: " << coord.x << " Y: " << coord.y << " Z: " << coord.z << std::endl;
 
                 if (frame_history.ns == "Vertical")
                 {
@@ -441,6 +532,7 @@ private:
     double fy;
     double cx;
     double cy;
+    cv::Mat Km;
     unsigned int img_height;
     unsigned int img_width;
     std_msgs::Header img_header;
@@ -493,23 +585,22 @@ private:
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "ransac_node");
+    ros::master::V_TopicInfo master_topics;
+    ros::master::getTopics(master_topics);
+    for (ros::master::V_TopicInfo::iterator it = master_topics.begin(); it != master_topics.end(); it++)
+    {
+        const ros::master::TopicInfo &info = *it;
+        if (info.name == "/camera/aligned_depth_to_color/camera_info")
+        {
+            ROS_INFO("Aligned depth to color camera info topic found");
+            aligned_depth = true;
+            break;
+        }
+    }
     RansacNode rn;
     // callback_object = &rn;
 
-    ros::master::V_TopicInfo master_topics;
-    ros::master::getTopics(master_topics);
-
     // If topic aligned_depth_to_color/camera_info is available, use it set flag aligned_depth to true
-    // for (ros::master::V_TopicInfo::iterator it = master_topics.begin(); it != master_topics.end(); it++)
-    // {
-    //     const ros::master::TopicInfo &info = *it;
-    //     if (info.name == "/camera/aligned_depth_to_color/camera_info")
-    //     {
-    //         ROS_INFO("Aligned depth to color camera info topic found");
-    //         aligned_depth = true;
-    //         break;
-    //     }
-    // }
 
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig> server;
     dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig>::CallbackType f;
