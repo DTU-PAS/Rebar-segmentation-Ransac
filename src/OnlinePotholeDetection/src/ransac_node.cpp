@@ -414,68 +414,13 @@ public:
                 int v = (frame_history.aoiList[i].closest_pixels_pair.first.y + frame_history.aoiList[i].closest_pixels_pair.second.y) / 2;
                 int u = (frame_history.aoiList[i].closest_pixels_pair.first.x + frame_history.aoiList[i].closest_pixels_pair.second.x) / 2;
 
-                // std::cout << "Before v: " << v << " u: " << u << std::endl;
+                std::cout << "Before v: " << v << " u: " << u << std::endl;
 
-                cv::Point2f center = cv::Point2f(img_width / 2.0, img_height / 2.0);
-
-                // Rotation matrix 0.9999589323997498, -0.009039390832185745, -0.00062500563217327, 0.00903862714767456, 0.9999583959579468, -0.0012129932874813676, 0.0006359443068504333, 0.0012072942918166518, 0.9999990463256836
-
-                cv::Mat rotm = (cv::Mat_<double>(3, 3) << 0.9999589323997498, -0.009039390832185745, -0.00062500563217327,
-                                0.00903862714767456, 0.9999583959579468, -0.0012129932874813676,
-                                0.0006359443068504333, 0.0012072942918166518, 0.9999990463256836);
-
-                // Translation 0.014663135632872581, -0.0001749516377458349, 0.00017571949865669012
-
-                cv::Mat translation = (cv::Mat_<double>(3, 1) << 0.014663135632872581, -0.0001749516377458349, 0.00017571949865669012);
-
-                // Transformation matrix
-                cv::Mat transformation = cv::Mat::eye(4, 4, CV_64F);
-                rotm.copyTo(transformation(cv::Rect(0, 0, 3, 3)));
-
-                // Set translation values
-
-                for (int i = 0; i < 3; ++i)
-                {
-                    transformation.at<double>(i, 3) = translation.at<double>(i);
-                }
-
-                std::cout << "Transformation matrix: " << transformation << std::endl;
-
-                // Apply the transformation matrix to u and v
-
-                // cv::Mat uv = (cv::Mat_<double>(4, 1) << u, v, 1, 1);
-
-                // cv::Point rotated_point = rotate_point(frame_history.ns, cv::Point(v, u), center, -angles.second + additional_angle, 0);
-
-                // v = rotated_point.x;
-                // u = rotated_point.y;
-
-                // std::cout << "After v: " << v << " u: " << u << std::endl;
-
-                // int v = frame_history.aoiList[i].closest_pixels_pair.second.y;
-                // int u = frame_history.aoiList[i].closest_pixels_pair.second.x;
                 if (depth_image.empty())
                 {
                     ROS_ERROR("Depth image is empty");
                     return;
                 }
-
-                // Visualize u and v in the image and depth image
-                cv::circle(main_img, cv::Point(u, v), 5, cv::Scalar(0, 255, 0), -1);
-
-                // Convert the depth image to RGB for visualization
-                cv::Mat depth_image_rgb;
-                cv::cvtColor(depth_image, depth_image_rgb, cv::COLOR_GRAY2BGR);
-                cv::circle(depth_image_rgb, cv::Point(u, v), 5, cv::Scalar(0, 255, 0), -1);
-
-                cv::imshow("Depth_Image", depth_image_rgb);
-                cv::waitKey(1);
-
-                cv::imshow("Main_Image", main_img);
-                cv::waitKey(1);
-
-                // Take the average depth of the sourrounding pixels 8 connectivity
-
                 std::vector<float> Z_values;
                 for (int i = -1; i < 2; ++i)
                 {
@@ -495,19 +440,26 @@ public:
                     Z = std::accumulate(Z_values.begin(), Z_values.end(), 0.0) / Z_values.size();
                 }
 
-                ROS_INFO("Depth: %f", Z);
-                // auto coord = pixel_to_camera(u, v, Z + average_distance);
+
+                cv::Mat pixel = cv::Mat::zeros(main_img.size(), CV_8U);
+                pixel.at<uchar>(v, u) = 255;
+
+                cv::Mat pixel_rotated = rotate_image("Image", pixel, -angles.second, false);
+
+                for(int i = 0; i < pixel_rotated.rows; ++i)
+                {
+                    for(int j = 0; j < pixel_rotated.cols; ++j)
+                    {
+                        if (pixel_rotated.at<uchar>(i, j) != 0)
+                        {
+                            v = i;
+                            u = j;
+                            break;
+                        }
+                    }
+                }
+
                 cv::Mat K;
-                if (aligned_depth)
-                {
-                    std::cout << "Using aligned depth K" << std::endl;
-                    K = (cv::Mat_<double>(3, 3) << 910.479248046875, 0.0, 636.556640625, 0.0, 910.8132934570312, 365.2656555175781, 0.0, 0.0, 1.0);
-                }
-                else
-                {
-                    std::cout << "Using default K" << std::endl;
-                    K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
-                }
 
                 K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
 
