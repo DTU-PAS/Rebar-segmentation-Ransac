@@ -4,5 +4,5 @@ steps:
       required-ros-distributions: noetic
   - uses: ros-tooling/action-ros-ci@v0.3
     with:
-      package-name: my_package
-      target-ros2-distro: jazzy
+      package-name: rebarsegmenation
+      target-ros1-distro: noetic
