@@ -74,8 +74,6 @@ public:
         ransac_threshold = config.ransac_threshold / (double)1000;
         min_cluster_size = config.min_cluster_size;
 
-        additional_angle = config.additional_angle;
-
         // Flags for showing images
         show_rotated_image = config.show_rotated_image;
         show_split_image = config.show_split_image;
@@ -242,8 +240,7 @@ public:
         {
             cv_ptr = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1);
             depth_image = cv_ptr->image;
-            cv::imshow("Depth_Image", depth_image);
-            cv::waitKey(1);
+            cv::cvtColor(depth_image, depth_image_rgb, cv::COLOR_GRAY2BGR);
         }
         catch (cv_bridge::Exception &e)
         {
@@ -388,7 +385,7 @@ public:
     {
         cv::Mat pruned_vertical = resulting_split.first;
         frames_history_vertical.ns = "Vertical";
-        detectInterruptions(frames_history_vertical, pruned_vertical, 70, 15, show_roi, show_clusters);
+        detectInterruptions(frames_history_vertical, pruned_vertical, 70, 10, show_roi, show_clusters);
         frames_history_vertical.calculateConfidence();
     }
 
@@ -396,7 +393,7 @@ public:
     {
         cv::Mat pruned_horizontal = resulting_split.second;
         frames_history_horizontal.ns = "Horizontal";
-        detectInterruptions(frames_history_horizontal, pruned_horizontal, 70, 15, show_roi, show_clusters);
+        detectInterruptions(frames_history_horizontal, pruned_horizontal, 70, 10, show_roi, show_clusters);
         frames_history_horizontal.calculateConfidence();
     }
 
@@ -414,7 +411,28 @@ public:
                 int v = (frame_history.aoiList[i].closest_pixels_pair.first.y + frame_history.aoiList[i].closest_pixels_pair.second.y) / 2;
                 int u = (frame_history.aoiList[i].closest_pixels_pair.first.x + frame_history.aoiList[i].closest_pixels_pair.second.x) / 2;
 
-                std::cout << "Before v: " << v << " u: " << u << std::endl;
+                cv::Mat pixel = cv::Mat::zeros(main_img.size(), CV_8U);
+                pixel.at<uchar>(v, u) = 255;
+
+                cv::Mat pixel_rotated = rotate_image("Image", pixel, -angles.second, false);
+
+                for (int i = 0; i < pixel_rotated.rows; ++i)
+                {
+                    for (int j = 0; j < pixel_rotated.cols; ++j)
+                    {
+                        if (pixel_rotated.at<uchar>(i, j) != 0)
+                        {
+                            v = i;
+                            u = j;
+                            break;
+                        }
+                    }
+                }
+
+                int v_depth = v;
+                int u_depth = u -15;
+
+                // std::cout << "Before v: " << v << " u: " << u << std::endl;
 
                 if (depth_image.empty())
                 {
@@ -426,13 +444,13 @@ public:
                 {
                     for (int j = -1; j < 2; ++j)
                     {
-                        if (v + i >= 0 && v + i < depth_image.rows && u + j >= 0 && u + j < depth_image.cols)
+                        if (v_depth + i >= 0 && v_depth + i < depth_image.rows && u_depth + j >= 0 && u_depth + j < depth_image.cols)
                         {
-                            Z_values.push_back(depth_image.at<float>(v + i, u + j) * 0.001f);
+                            Z_values.push_back(depth_image.at<float>(v_depth + i, u_depth + j) * 0.001f);
                         }
                     }
                 }
-
+                // TODO The depth point is not at the right position
                 float Z;
 
                 if (Z_values.size() > 0)
@@ -441,29 +459,15 @@ public:
                 }
 
 
-                cv::Mat pixel = cv::Mat::zeros(main_img.size(), CV_8U);
-                pixel.at<uchar>(v, u) = 255;
-
-                cv::Mat pixel_rotated = rotate_image("Image", pixel, -angles.second, false);
-
-                for(int i = 0; i < pixel_rotated.rows; ++i)
-                {
-                    for(int j = 0; j < pixel_rotated.cols; ++j)
-                    {
-                        if (pixel_rotated.at<uchar>(i, j) != 0)
-                        {
-                            v = i;
-                            u = j;
-                            break;
-                        }
-                    }
-                }
+                cv::circle(depth_image_rgb, cv::Point(u_depth, v_depth), 1, cv::Scalar(0, 255, 0), 2);
+                cv::circle(main_img, cv::Point(u, v), 1, cv::Scalar(0, 255, 0), 2);
 
                 cv::Mat K;
 
                 K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
 
-                auto coord = pixel_to_camera(K, u, v, Z);
+                // std::cout << "Average distance to camera: " << average_distance_to_camera << std::endl;
+                auto coord = pixel_to_camera(K, u, v, Z - average_distance_to_background);
 
                 // std::cout << "X: " << coord.x << " Y: " << coord.y << " Z: " << coord.z << std::endl;
 
@@ -477,6 +481,9 @@ public:
                 }
             }
         }
+        // cv::imshow("Main_Image", main_img);
+        cv::imshow("Depth_Image", depth_image_rgb);
+        cv::waitKey(1);
     }
 
 private:
@@ -508,6 +515,7 @@ private:
 
     cv::Mat rgb_image;
     cv::Mat depth_image;
+    cv::Mat depth_image_rgb;
     cv::Mat main_img;
     cv::Mat gray_orig;
     cv::Mat thinned_image;
@@ -522,7 +530,6 @@ private:
     double ransac_threshold = 0.02;
     int min_cluster_size = 150;
     double required_confidence = 0.7;
-    double additional_angle = 0;
 
     // Flags for showing images
     bool show_orig_image = false;

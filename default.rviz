@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /PCDs1
       Splitter Ratio: 0.5
     Tree Height: 326
   - Class: rviz/Selection
@@ -114,10 +115,16 @@ Visualization Manager:
       Unreliable: false
       Value: true
       Visibility:
+        Axes: true
         Grid: true
         Image: true
         Label: true
         Marker: true
+        PCDs:
+          Inlier: true
+          Outlier: true
+          RAW: true
+          Value: true
         PointCloud2: true
         Value: true
       Zoom Factor: 1
@@ -130,6 +137,103 @@ Visualization Manager:
         Vertical: true
       Queue Size: 100
       Value: true
+    - Class: rviz/Group
+      Displays:
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: RGB8
+          Decay Time: 0
+          Enabled: false
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: RAW
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.0010000000474974513
+          Style: Flat Squares
+          Topic: /camera/depth/color/points
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: false
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: Intensity
+          Decay Time: 0
+          Enabled: false
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: Inlier
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.0010000000474974513
+          Style: Flat Squares
+          Topic: /inlier_points
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: false
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: Intensity
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Min Color: 0; 0; 0
+          Name: Outlier
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.0010000000474974513
+          Style: Flat Squares
+          Topic: /outlier_points
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+      Enabled: true
+      Name: PCDs
+    - Alpha: 1
+      Class: rviz/Axes
+      Enabled: false
+      Length: 1
+      Name: Axes
+      Radius: 0.009999999776482582
+      Reference Frame: camera_color_optical_frame
+      Show Trail: false
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -158,7 +262,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.1563957929611206
+      Distance: 0.7167173624038696
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -166,17 +270,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.017214946448802948
-        Y: 0.07462407648563385
-        Z: 0.20681366324424744
+        X: 0.014997061342000961
+        Y: 0.053021449595689774
+        Z: 0.30057042837142944
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.0003978852182626724
+      Pitch: -1.5052038431167603
       Target Frame: <Fixed Frame>
-      Yaw: 3.718573808670044
+      Yaw: 4.72675895690918
     Saved: ~
 Window Geometry:
   Camera:

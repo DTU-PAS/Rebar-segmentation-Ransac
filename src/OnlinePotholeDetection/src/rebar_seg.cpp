@@ -342,12 +342,12 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
             return std::numeric_limits<double>::max();
         };
 
-        for(int i = 0; i < clusters.size(); ++i)
-        {
-            // Show the edges of each cluster with a circle
-            cv::circle(outputImage, cv::Point(clusters[i].leftEdge, clusters[i].topEdge), 5, cv::Scalar(0, 255, 0), 2);
-            cv::circle(outputImage, cv::Point(clusters[i].rightEdge, clusters[i].bottomEdge), 5, cv::Scalar(0, 0, 255), 2);
-        }
+        // for(int i = 0; i < clusters.size(); ++i)
+        // {
+        //     // Show the edges of each cluster with a circle
+        //     cv::circle(outputImage, cv::Point(clusters[i].leftEdge, clusters[i].topEdge), 5, cv::Scalar(0, 255, 0), 2);
+        //     cv::circle(outputImage, cv::Point(clusters[i].rightEdge, clusters[i].bottomEdge), 5, cv::Scalar(0, 0, 255), 2);
+        // }
 
         std::vector<bool> pairedLeft(clusters.size(), false);
         std::vector<bool> pairedRight(clusters.size(), false);
@@ -384,6 +384,14 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
             cv::Point pt2 = cv::Point(clusters[minIndex2].leftEdge, (clusters[minIndex2].topEdge + clusters[minIndex2].bottomEdge) / 2);
             cv::Point pt3 = cv::Point((clusters[minIndex1].leftEdge + clusters[minIndex1].rightEdge) / 2, clusters[minIndex1].bottomEdge);
             cv::Point pt4 = cv::Point((clusters[minIndex2].leftEdge + clusters[minIndex2].rightEdge) / 2, clusters[minIndex2].topEdge);
+
+            // Draw circles at the edges of the clusters
+            // cv::circle(outputImage, pt1, 5, cv::Scalar(0, 255, 0), 2);
+            // cv::circle(outputImage, pt2, 5, cv::Scalar(0, 0, 255), 2);
+            // cv::circle(outputImage, pt3, 5, cv::Scalar(0, 255, 0), 2);
+            // cv::circle(outputImage, pt4, 5, cv::Scalar(0, 0, 255), 2);
+
+
 
             int highestId = 0;
             for (auto &aoi : frame_history.aoiList)
@@ -461,11 +469,11 @@ cv::Point3f pixel_to_camera(cv::Mat K, int u, int v, float Z)
     cv::Mat pixel_coords = (cv::Mat_<double>(3, 1) << u, v, 1);
     cv::Mat camera_coords = K_inv * pixel_coords * Z;
 
-    std::cout << "Depth Value: " << Z << std::endl;
-    std::cout << "Intrinsic Matrix: " << K_inv << std::endl;
-    std::cout << "Intrinsic Matrix: " << K << std::endl;
-    std::cout << "Pixel Coords: " << pixel_coords << std::endl;
-    std::cout << "Camera Coords: " << camera_coords << std::endl;
+    // std::cout << "Depth Value: " << Z << std::endl;
+    // std::cout << "Intrinsic Matrix: " << K_inv << std::endl;
+    // std::cout << "Intrinsic Matrix: " << K << std::endl;
+    // std::cout << "Pixel Coords: " << pixel_coords << std::endl;
+    // std::cout << "Camera Coords: " << camera_coords << std::endl;
 
 
     return cv::Point3f(camera_coords.at<double>(0, 0), camera_coords.at<double>(1, 0), camera_coords.at<double>(2, 0));
@@ -504,6 +512,11 @@ void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns,
     marker.pose.position.x = coord.x;
     marker.pose.position.y = coord.y;
     marker.pose.position.z = coord.z;
+
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
 
     pub.publish(marker);
 }
