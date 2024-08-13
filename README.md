@@ -1,12 +1,5 @@
 <a id="readme-top"></a>
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
 
 
 <!-- PROJECT LOGO -->
@@ -19,7 +12,7 @@
   <h3 align="center">Rebar Segmentation using Ransac</h3>
 
   <p align="center">
-  This project uses a poincloud and a depth image to segment exposed rebars and detect potential damages. The sensor used for development is the Intel Realsense D435i. However, the code can be easily be adapted to other sensors such as the D455, L515 or Roboception rc_visard 160 color. 
+  Rebar segmentation of exposed rebar on construction sites
     <br />
     <a href="https://github.com/DTU-PAS/Rebar-segmentation-Ransac"><strong>Explore the docs »</strong></a>
     <br />
@@ -51,7 +44,7 @@
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
+    <li><a href="#results">Results</a></li>
     <li><a href="#contact">Contact</a></li>
   </ol>
 </details>
@@ -63,7 +56,9 @@
 
 Overview: https://www.robetarme-project.eu/
 
+This project uses a poincloud and a depth image to segment exposed rebars and detect potential damages. The 
 
+The sensor used for development is the Intel Realsense D435i. However, the code can be easily be adapted to other sensors such as the D455, L515 or Roboception rc_visard 160 color. 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -103,11 +98,16 @@ This is an example of how to list things you need to use the software and how to
 * Clone the repository: [HTTPS](https://github.com/DTU-PAS/Rebar-segmentation-Ransac.git) or [SSH](git@github.com:DTU-PAS/Rebar-segmentation-Ransac.git)
 
 #### Hardware
-Connect 
+**Camera:** Connect the camera sensor using a reliable cable to your PC. The cable quality and speed is really important.
+
+**Test Setup:** ~11mm rebar mounted on a wooden board with ~30mm 3d printed spacers. The size of the grid pattern is variable.
+
+<p align=center><img src="images/Setup/spacers.png" height="480">
+<img src="images/Setup/setup.png" height="480">
+</p>
+
 
 ### Installation
-
-_Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
 
 1. Clone the repo
    ```sh
@@ -117,25 +117,27 @@ _Below is an example of how you can instruct your audience on installing and set
    ```sh
    catkin_make
    ```
-3. Open 5 terminal windows with the following commands
+3. Open 2 terminal windows with the following commands
    ```sh
    roslaunch realsense2_camera rs_camera.launch align_depth:=True filters:=pointcloud
    ```
    ```sh
-   roslaunch zPotholeDetection OnlinePotholeDetection.launch
+   roslaunch rebarsegmenation rebarsegmenation.launch
    ```
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- USAGE EXAMPLES -->
-## Usage
+## Results
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+<p align=center>
+<img src="images/Results/Screenshot from 2024-08-13 15-20-29.png" height="480">
+<img src="images/Results/Screenshot from 2024-08-13 15-23-08.png" height="480">
+<img src="images/Results/Screenshot from 2024-08-13 15-23-38.png" height="480">
+<img src="images/Results/Screenshot from 2024-08-13 15-24-11.png" height="480">
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+</p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

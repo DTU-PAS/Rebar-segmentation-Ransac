@@ -1,7 +1,7 @@
 <launch>
 
     <!-- RVIZ visualization -->
-    <arg name="rviz_file" default="rebarsegmentation" />
+    <arg name="rviz_file" default="rebarsegmenation" />
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find rebarsegmenation)/rviz/$(arg rviz_file).rviz" />
 
     <!-- RQT -->
