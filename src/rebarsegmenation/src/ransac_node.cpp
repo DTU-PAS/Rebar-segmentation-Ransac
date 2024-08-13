@@ -14,7 +14,7 @@
 
 // Include dynamic reconfigure
 #include <dynamic_reconfigure/server.h>
-#include <OnlinePotholeDetection/Ransac_node_ParamsConfig.h>
+#include <rebarsegmenation/Ransac_node_ParamsConfig.h>
 
 // Include opencv2
 #include <opencv2/imgproc/imgproc.hpp>
@@ -36,6 +36,23 @@ class RansacNode
 public:
     RansacNode() : nh()
     {
+        std::cout << "PCL Version: " << PCL_VERSION << std::endl;
+        std::cout << "OpenCV Version: " << CV_VERSION << std::endl;
+        if (__cplusplus == 202101L)
+            std::cout << "C++23";
+        else if (__cplusplus == 202002L)
+            std::cout << "C++20";
+        else if (__cplusplus == 201703L)
+            std::cout << "C++17";
+        else if (__cplusplus == 201402L)
+            std::cout << "C++14";
+        else if (__cplusplus == 201103L)
+            std::cout << "C++11";
+        else if (__cplusplus == 199711L)
+            std::cout << "C++98";
+        else
+            std::cout << "pre-standard C++." << __cplusplus;
+        std::cout << "\n";
         inlier_pub = nh.advertise<sensor_msgs::PointCloud2>("/inlier_points", 1);
         outlier_pub = nh.advertise<sensor_msgs::PointCloud2>("/outlier_points", 1);
         label_pub = nh.advertise<sensor_msgs::Image>("/label", 1);
@@ -69,7 +86,7 @@ public:
         // depth_sub = nh.subscribe("/stereo/depth", 1, &RansacNode::depth_callback, this);
     }
 
-    void dynamic_reconfigure_callback(OnlinePotholeDetection::Ransac_node_ParamsConfig &config, uint32_t level)
+    void dynamic_reconfigure_callback(rebarsegmenation::Ransac_node_ParamsConfig &config, uint32_t level)
     {
         ransac_threshold = config.ransac_threshold / (double)1000;
         min_cluster_size = config.min_cluster_size;
@@ -561,8 +578,8 @@ int main(int argc, char **argv)
 
     // If topic aligned_depth_to_color/camera_info is available, use it set flag aligned_depth to true
 
-    dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig> server;
-    dynamic_reconfigure::Server<OnlinePotholeDetection::Ransac_node_ParamsConfig>::CallbackType f;
+    dynamic_reconfigure::Server<rebarsegmenation::Ransac_node_ParamsConfig> server;
+    dynamic_reconfigure::Server<rebarsegmenation::Ransac_node_ParamsConfig>::CallbackType f;
 
     f = boost::bind(&RansacNode::dynamic_reconfigure_callback, &rn, _1, _2);
     server.setCallback(f);

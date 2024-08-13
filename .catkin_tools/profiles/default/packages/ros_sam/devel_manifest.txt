@@ -1,6 +1,0 @@
-ros_sam/ros_sam
-/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/.private/ros_sam/cmake.lock /home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/./cmake.lock
-/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/.private/ros_sam/lib/python3/dist-packages/ros_sam/__init__.py /home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/lib/python3/dist-packages/ros_sam/__init__.py
-/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/.private/ros_sam/lib/pkgconfig/ros_sam.pc /home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/lib/pkgconfig/ros_sam.pc
-/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/.private/ros_sam/share/ros_sam/cmake/ros_samConfig.cmake /home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/share/ros_sam/cmake/ros_samConfig.cmake
-/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/.private/ros_sam/share/ros_sam/cmake/ros_samConfig-version.cmake /home/larde/Documents/GitHub/Rebar-segmentation-Ransac/devel/share/ros_sam/cmake/ros_samConfig-version.cmake
