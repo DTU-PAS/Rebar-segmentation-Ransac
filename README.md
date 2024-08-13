@@ -1,6 +1,6 @@
 <a id="readme-top"></a>
 
-
+[![build][build]][build-url] 
 
 <!-- PROJECT LOGO -->
 <br />
@@ -150,8 +150,8 @@ Lars Arnold Dethlefsen - larde@dtu.dk
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[build]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/workflows/main.yml/badge.svg
+[build-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/
 [contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge
 [contributors-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=for-the-badge
