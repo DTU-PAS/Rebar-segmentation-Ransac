@@ -1,7 +1,5 @@
 <a id="readme-top"></a>
 
-[![build][build]][build-url] 
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -65,6 +63,7 @@ The sensor used for development is the Intel Realsense D435i. However, the code 
 
 
 ## Built With
+[![build][build]][build-url] 
 
 [![ROS][ROS]][ROS-url] 
 Noetic 1.16.0
