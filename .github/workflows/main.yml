@@ -29,15 +29,16 @@ jobs:
             sudo apt-get install -y python3-wstool
             sudo apt-get install -y ros-cmake-modules
             sudo apt-get install -y ros-$ROS_DISTRO-catkin
+            sudo apt-get install -y ros-$ROS_DISTRO-realsense*
+            sudo apt-get install -y ros-$ROS_DISTRO-pcl-*
+            sudo apt-get install -y ros-$ROS_DISTRO-visualization-msgs
             source /opt/ros/$ROS_DISTRO/setup.bash
-      - name: Install Additional dependencies and prepare for compilation
-        run: |
-          sudo apt-get install -y ros-$ROS_DISTRO-realsense*
-          mkdir -p ~/Rebar-segmentation-Ransac
-          ln -s $GITHUB_WORKSPACE ~/Rebar-segmentation-Ransac
-      - name: catkin_make
+      - name: Compile ROS Workspace
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
+          ln -s $GITHUB_WORKSPACE ~/Rebar-segmentation-Ransac
+          ls -a
           cd ~/Rebar-segmentation-Ransac
+          ls -a
           catkin_make
           source devel/setup.bash
