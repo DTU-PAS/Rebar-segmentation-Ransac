@@ -15,7 +15,7 @@
     <a href="https://github.com/DTU-PAS/Rebar-segmentation-Ransac"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/DTU-PAS/Rebar-segmentation-Ransac">View Demo</a>
+    <a href="[https://github.com/DTU-PAS/Rebar-segmentation-Ransac](https://github.com/DTU-PAS/Rebar-segmentation-Ransac?tab=readme-ov-file#results)">View Demo</a>
     ·
     <a href="https://github.com/DTU-PAS/Rebar-segmentation-Ransac/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     ·
@@ -54,9 +54,7 @@
 
 Overview: https://www.robetarme-project.eu/
 
-This project uses a poincloud and a depth image to segment exposed rebars and detect potential damages. The 
-
-The sensor used for development is the Intel Realsense D435i. However, the code can be easily be adapted to other sensors such as the D455, L515 or Roboception rc_visard 160 color. 
+This project uses a poincloud and a depth image to segment exposed rebars and detect potential damages. The sensor used for development is the Intel Realsense D435i. However, the code can be easily be adapted to other sensors such as the D455, L515 or Roboception rc_visard 160 color. 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
