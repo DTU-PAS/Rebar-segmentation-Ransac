@@ -30,16 +30,14 @@ jobs:
             sudo apt-get install -y ros-cmake-modules
             sudo apt-get install -y ros-$ROS_DISTRO-catkin
             source /opt/ros/$ROS_DISTRO/setup.bash
-      - name: Install ROS packages with rosdep
+      - name: Install Additional dependencies and prepare for compilation
         run: |
-          source /opt/ros/$ROS_DISTRO/setup.bash
-          mkdir -p ~/catkin_ws/src
-          ln -s $GITHUB_WORKSPACE ~/catkin_ws
-          cd ~/catkin_ws
           sudo apt-get install -y ros-$ROS_DISTRO-realsense*
+          mkdir -p ~/Rebar-segmentation-Ransac
+          ln -s $GITHUB_WORKSPACE ~/Rebar-segmentation-Ransac
       - name: catkin_make
         run: |
           source /opt/ros/$ROS_DISTRO/setup.bash
-          cd ~/catkin_ws
+          cd ~/Rebar-segmentation-Ransac
           catkin_make
           source devel/setup.bash
