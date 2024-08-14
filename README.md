@@ -15,7 +15,7 @@
     <a href="https://github.com/DTU-PAS/Rebar-segmentation-Ransac"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="[https://github.com/DTU-PAS/Rebar-segmentation-Ransac](https://github.com/DTU-PAS/Rebar-segmentation-Ransac?tab=readme-ov-file#results)">View Demo</a>
+    <a href="https://github.com/DTU-PAS/Rebar-segmentation-Ransac?tab=readme-ov-file#results">View Demo</a>
     ·
     <a href="https://github.com/DTU-PAS/Rebar-segmentation-Ransac/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     ·
