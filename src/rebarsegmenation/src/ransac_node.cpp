@@ -387,7 +387,7 @@ public:
             }
         }
 
-        cv::Mat back_rotated_image = rotate_image("Vertical - reverse rotation", rotated_image, -angles.second, show_rotated_image);
+        cv::Mat back_rotated_image = rotate_image("Vertical - reverse rotation", rotated_image, -angles.second, show_rotated_image)
 
         putText(back_rotated_image, "Min. confidence: " + std::to_string(required_confidence), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
 
@@ -439,8 +439,8 @@ public:
                     {
                         if (pixel_rotated.at<uchar>(i, j) != 0)
                         {
-                            v = i;
-                            u = j;
+                            v = x4;
+                            u = y4;
                             break;
                         }
                     }
