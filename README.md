@@ -92,6 +92,18 @@ Noetic 1.16.0
 * Intel Realsense ROS1 Wrapper (ros1-legacy): [Method 1: The ROS distribution:](https://github.com/IntelRealSense/realsense-ros/tree/ros1-legacy?tab=readme-ov-file#method-1-the-ros-distribution)
 * Clone the repository: [HTTPS](https://github.com/DTU-PAS/Rebar-segmentation-Ransac.git) or [SSH](git@github.com:DTU-PAS/Rebar-segmentation-Ransac.git)
 
+* Also ensure that the following packages are installed using **sudo apt-get install**
+  * python3-catkin-pkg
+  * python3-catkin-tools
+  * python3-osrf-pycommon
+  * python3-rosdep
+  * python3-wstool
+  * ros-cmake-modules
+  * ros-$ROS_DISTRO-catkin
+  * ros-$ROS_DISTRO-realsense*
+  * ros-$ROS_DISTRO-pcl-*
+  * ros-$ROS_DISTRO-visualization-msgs
+
 #### Hardware
 * Camera: Connect the camera sensor using the OEM cable. 3rd party cables have shown to be unreliable at times but can work aswell.
 
@@ -9393,7 +9405,6 @@ The finished setup can be seen in the pictures below. Some rebars were additiona
 <img src="images/Results/Screenshot from 2024-08-13 15-23-08.png" height="480">
 <img src="images/Results/Screenshot from 2024-08-13 15-23-38.png" height="480">
 <img src="images/Results/Screenshot from 2024-08-13 15-24-11.png" height="480">
-
 </p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
