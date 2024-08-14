@@ -1,7 +1,5 @@
 <a id="readme-top"></a>
 
-
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -65,6 +63,7 @@ The sensor used for development is the Intel Realsense D435i. However, the code 
 
 
 ## Built With
+[![build][build]][build-url] 
 
 [![ROS][ROS]][ROS-url] 
 Noetic 1.16.0
@@ -150,8 +149,8 @@ Lars Arnold Dethlefsen - larde@dtu.dk
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[build]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/workflows/main.yml/badge.svg
+[build-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/
 [contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge
 [contributors-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=for-the-badge
