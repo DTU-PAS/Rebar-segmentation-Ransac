@@ -55,3 +55,5 @@ CATKIN_IGNORE
 
 # Large .bag files
 *.bag
+
+.DS_Store
