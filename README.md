@@ -89,18 +89,17 @@ Noetic 1.16.0
 ## Getting Started
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-
-#### Install: 
+#### Software: 
 * ROS: [Ubuntu install of ROS Noetic](https://wiki.ros.org/noetic/Installation/Ubuntu)
 * Intel Realsense ROS1 Wrapper (ros1-legacy): [Method 1: The ROS distribution:](https://github.com/IntelRealSense/realsense-ros/tree/ros1-legacy?tab=readme-ov-file#method-1-the-ros-distribution)
 * Clone the repository: [HTTPS](https://github.com/DTU-PAS/Rebar-segmentation-Ransac.git) or [SSH](git@github.com:DTU-PAS/Rebar-segmentation-Ransac.git)
 
 #### Hardware
-**Camera:** Connect the camera sensor using a reliable cable to your PC. The cable quality and speed is really important.
+* Camera: Connect the camera sensor using the OEM cable. 3rd party cables have shown to be unreliable at times but can work aswell.
 
-**Test Setup:** ~11mm rebar mounted on a wooden board with ~30mm 3d printed spacers. The size of the grid pattern is variable.
+* Test Setup: ~11mm rebar mounted on a wooden board with ~30mm 3d printed spacers. The size of the grid pattern is ~20cm. The camera should be placed ~40-60cm in front of the board.
 
+The Spacers were designed in DesignSpark. The design file aswell as an STL file are included in the repo.
 ```stl
 solid ASCII
   facet normal -9.993862e-01 -2.883627e-03 -3.491313e-02
@@ -30974,9 +30973,9 @@ solid ASCII
     endloop
   endfacet
 endsolid
-
 ```
 
+The finished setup can be seen in the pictures below. Some rebars were additionally cut in half and spread appart to demonstrate damages.
 <p align=center><img src="images/Setup/spacers.png" height="480">
 <img src="images/Setup/setup.png" height="480">
 </p>
@@ -31027,19 +31026,6 @@ Lars Arnold Dethlefsen - larde@dtu.dk
 
 [build]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/workflows/main.yml/badge.svg
 [build-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/
-[contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge
-[contributors-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=for-the-badge
-[forks-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/network/members
-[stars-shield]: https://img.shields.io/github/stars/othneildrew/Best-README-Template.svg?style=for-the-badge
-[stars-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/stargazers
-[issues-shield]: https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=for-the-badge
-[issues-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/issues
-[license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge
-[license-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/othneildrew
-[product-screenshot]: images/screenshot.png
 [ROS]: https://img.shields.io/badge/ROS-22314E?style=for-the-badge&logo=ROS&logoColor=white
 [ROS-url]: https://wiki.ros.org/noetic
 [OPENCV]: https://img.shields.io/badge/OpenCV-27338e?style=for-the-badge&logo=OpenCV&logoColor=white
