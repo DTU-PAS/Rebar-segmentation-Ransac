@@ -7,7 +7,7 @@
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-  <h3 align="center">Rebar Segmentation using Ransac</h3>
+  <h1 align="center">Rebar Segmentation using Ransac</h1>
 
   <p align="center">
   Rebar segmentation of exposed rebar on construction sites
