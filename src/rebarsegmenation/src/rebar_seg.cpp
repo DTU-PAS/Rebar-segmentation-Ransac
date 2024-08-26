@@ -122,45 +122,45 @@ std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, 
     return std::make_pair(verticalLines, horizontalLines);
 }
 
-// std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, std::pair<double, double> angles, int left_right_num, bool debug_level)
-// {
+/*std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, std::pair<double, double> angles, int left_right_num, bool debug_level)
+{
 
-//     // Create a horizontal kernel
-//     cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(25, 1));
+    // Create a horizontal kernel
+    cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(25, 1));
 
-//     // Create a larger square kernel that can accommodate the rotation
-//     int kernelSize = std::max(horizontalKernel.cols, horizontalKernel.rows) * 2;
-//     cv::Mat largeKernel = cv::Mat::zeros(kernelSize, kernelSize, CV_8UC1);
+    // Create a larger square kernel that can accommodate the rotation
+    int kernelSize = std::max(horizontalKernel.cols, horizontalKernel.rows) * 2;
+    cv::Mat largeKernel = cv::Mat::zeros(kernelSize, kernelSize, CV_8UC1);
 
-//     // Place the horizontal kernel at the center of the larger kernel
-//     horizontalKernel.copyTo(largeKernel(cv::Rect((kernelSize - horizontalKernel.cols) / 2, (kernelSize - horizontalKernel.rows) / 2, horizontalKernel.cols, horizontalKernel.rows)));
+    // Place the horizontal kernel at the center of the larger kernel
+    horizontalKernel.copyTo(largeKernel(cv::Rect((kernelSize - horizontalKernel.cols) / 2, (kernelSize - horizontalKernel.rows) / 2, horizontalKernel.cols, horizontalKernel.rows)));
 
-//     // Rotate the large kernel by the known angle
-//     cv::Mat rotationMatrix = cv::getRotationMatrix2D(cv::Point2f(kernelSize / 2, kernelSize / 2), -angles.second, 1.0);
-//     cv::Mat rotatedKernel;
-//     cv::warpAffine(largeKernel, rotatedKernel, rotationMatrix, largeKernel.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0));
+    // Rotate the large kernel by the known angle
+    cv::Mat rotationMatrix = cv::getRotationMatrix2D(cv::Point2f(kernelSize / 2, kernelSize / 2), -angles.second, 1.0);
+    cv::Mat rotatedKernel;
+    cv::warpAffine(largeKernel, rotatedKernel, rotationMatrix, largeKernel.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0));
 
-//     // Crop the rotated kernel to remove extra black areas
-//     cv::Rect boundingBox = cv::boundingRect(rotatedKernel);
-//     rotatedKernel = rotatedKernel(boundingBox);
-//     std::cout << "Rotated Kernel: " << rotatedKernel << std::endl;
+    // Crop the rotated kernel to remove extra black areas
+    cv::Rect boundingBox = cv::boundingRect(rotatedKernel);
+    rotatedKernel = rotatedKernel(boundingBox);
+    std::cout << "Rotated Kernel: " << rotatedKernel << std::endl;
 
-//     // Apply morphology operation to detect lines with the rotated kernel
-//     cv::Mat detectedLines;
-//     cv::morphologyEx(image, detectedLines, cv::MORPH_OPEN, rotatedKernel);
+    // Apply morphology operation to detect lines with the rotated kernel
+    cv::Mat detectedLines;
+    cv::morphologyEx(image, detectedLines, cv::MORPH_OPEN, rotatedKernel);
 
-//     cv::imshow("Detected Horizontal Lines", detectedLines);
-//     cv::waitKey(1);
+    cv::imshow("Detected Horizontal Lines", detectedLines);
+    cv::waitKey(1);
 
-//     // // Create a horizontal kernel
-//     // cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(25, 1));
-//     // cv::Mat verticalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, 25));
-//     // // Print the kernel
-//     // std::cout << "Horizontal Kernel: " << horizontalKernel << std::endl;
-//     // std::cout << "Vertical Kernel: " << verticalKernel << std::endl;
+    // // Create a horizontal kernel
+    // cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(25, 1));
+    // cv::Mat verticalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1, 25));
+    // // Print the kernel
+    // std::cout << "Horizontal Kernel: " << horizontalKernel << std::endl;
+    // std::cout << "Vertical Kernel: " << verticalKernel << std::endl;
 
-//     return std::make_pair(detectedLines, detectedLines);
-// }
+    return std::make_pair(detectedLines, detectedLines);
+}*/
 
 cv::Vec3b random_color()
 {
@@ -353,8 +353,7 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
         std::vector<bool> pairedRight(clusters.size(), false);
 
         // Pair clusters based on their proximity and draw lines between closest pairs
-        while (std::count(pairedLeft.begin(), pairedLeft.end(), false) > 1 ||
-               std::count(pairedRight.begin(), pairedRight.end(), false) > 1)
+        while (std::count(pairedLeft.begin(), pairedLeft.end(), false) > 1 || std::count(pairedRight.begin(), pairedRight.end(), false) > 1)
         {
             double minDistance = std::numeric_limits<double>::max();
             int minIndex1 = -1;
@@ -386,10 +385,10 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
             cv::Point pt4 = cv::Point((clusters[minIndex2].leftEdge + clusters[minIndex2].rightEdge) / 2, clusters[minIndex2].topEdge);
 
             // Draw circles at the edges of the clusters
-            // cv::circle(outputImage, pt1, 5, cv::Scalar(0, 255, 0), 2);
-            // cv::circle(outputImage, pt2, 5, cv::Scalar(0, 0, 255), 2);
-            // cv::circle(outputImage, pt3, 5, cv::Scalar(0, 255, 0), 2);
-            // cv::circle(outputImage, pt4, 5, cv::Scalar(0, 0, 255), 2);
+            cv::circle(outputImage, pt1, 5, cv::Scalar(255, 0, 0), 2);
+            cv::circle(outputImage, pt2, 5, cv::Scalar(0, 255, 0), 2);
+            cv::circle(outputImage, pt3, 5, cv::Scalar(0, 0, 255), 2);
+            cv::circle(outputImage, pt4, 5, cv::Scalar(255, 0, 255), 2);
 
 
 
@@ -469,12 +468,6 @@ cv::Point3f pixel_to_camera(cv::Mat K, int u, int v, float Z)
     cv::Mat pixel_coords = (cv::Mat_<double>(3, 1) << u, v, 1);
     cv::Mat camera_coords = K_inv * pixel_coords * Z;
 
-    // std::cout << "Depth Value: " << Z << std::endl;
-    // std::cout << "Intrinsic Matrix: " << K_inv << std::endl;
-    // std::cout << "Intrinsic Matrix: " << K << std::endl;
-    // std::cout << "Pixel Coords: " << pixel_coords << std::endl;
-    // std::cout << "Camera Coords: " << camera_coords << std::endl;
-
 
     return cv::Point3f(camera_coords.at<double>(0, 0), camera_coords.at<double>(1, 0), camera_coords.at<double>(2, 0));
 }
@@ -487,8 +480,7 @@ void deleteMarkers(ros::Publisher &pub)
     pub.publish(marker);
 }
 
-void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, ros::Publisher &pub,
-                  const std::vector<int> &color)
+void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, ros::Publisher &pub, const std::vector<int> &color)
 {
     visualization_msgs::Marker marker;
     marker.header.frame_id = "camera_color_optical_frame";

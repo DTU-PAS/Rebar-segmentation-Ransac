@@ -402,7 +402,7 @@ public:
     {
         cv::Mat pruned_vertical = resulting_split.first;
         frames_history_vertical.ns = "Vertical";
-        detectInterruptions(frames_history_vertical, pruned_vertical, 70, 10, show_roi, show_clusters);
+        detectInterruptions(frames_history_vertical, pruned_vertical, 70, 20, show_roi, show_clusters);
         frames_history_vertical.calculateConfidence();
     }
 
@@ -445,17 +445,27 @@ public:
                         }
                     }
                 }
-
                 int v_depth = v;
-                int u_depth = u -15;
+                int u_depth = u;
 
-                // std::cout << "Before v: " << v << " u: " << u << std::endl;
+                // if (frame_history.ns == "Vertical")
+                // {
+                //     v_depth = v;
+                //     u_depth = u -15;
+                // }
+                // else if (frame_history.ns == "Horizontal")
+                // {
+                //     v_depth = v;
+                //     u_depth = u;
+                // }
 
-                if (depth_image.empty())
-                {
-                    ROS_ERROR("Depth image is empty");
-                    return;
-                }
+                    // std::cout << "Before v: " << v << " u: " << u << std::endl;
+
+                    if (depth_image.empty())
+                    {
+                        ROS_ERROR("Depth image is empty");
+                        return;
+                    }
                 std::vector<float> Z_values;
                 for (int i = -1; i < 2; ++i)
                 {
@@ -484,7 +494,15 @@ public:
                 K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
 
                 // std::cout << "Average distance to camera: " << average_distance_to_camera << std::endl;
-                auto coord = pixel_to_camera(K, u, v, Z - average_distance_to_background);
+                cv::Point3f coord;
+                if (frame_history.ns == "Vertical")
+                {
+                    coord = pixel_to_camera(K, u, v, Z - average_distance_to_background);
+                }
+                else if (frame_history.ns == "Horizontal")
+                {
+                    coord = pixel_to_camera(K, u, v, Z);
+                }
 
                 // std::cout << "X: " << coord.x << " Y: " << coord.y << " Z: " << coord.z << std::endl;
 
