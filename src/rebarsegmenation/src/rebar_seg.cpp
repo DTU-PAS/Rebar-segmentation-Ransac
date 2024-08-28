@@ -230,7 +230,7 @@ float computeIoU(const AOI &a, const AOI &b)
     return static_cast<float>(intersectionArea) / unionArea;
 }
 
-void computeAOI(frame_AOI_info &frame_history, AOI current_aoi, int highestId = 0)
+void computeAOI(frame_AOI_info &frame_history, AOI current_aoi, std::vector<cv::Point> points, int highestId = 0)
 {
     bool matched = false;
     if (frame_history.aoiList.size() <= 0)
@@ -250,6 +250,7 @@ void computeAOI(frame_AOI_info &frame_history, AOI current_aoi, int highestId = 
                 aoi.closest_pixels_pair = current_aoi.closest_pixels_pair;
                 aoi.bounding_box = current_aoi.bounding_box;
                 aoi.matchCount += 2;
+                aoi.points = points;
                 if (aoi.matchCount > HISTORY)
                 {
                     aoi.matchCount = HISTORY;
@@ -383,6 +384,8 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
             cv::Point pt2 = cv::Point(clusters[minIndex2].leftEdge, (clusters[minIndex2].topEdge + clusters[minIndex2].bottomEdge) / 2);
             cv::Point pt3 = cv::Point((clusters[minIndex1].leftEdge + clusters[minIndex1].rightEdge) / 2, clusters[minIndex1].bottomEdge);
             cv::Point pt4 = cv::Point((clusters[minIndex2].leftEdge + clusters[minIndex2].rightEdge) / 2, clusters[minIndex2].topEdge);
+        
+            std::vector<cv::Point> points = {pt1, pt2, pt3, pt4};
 
             // Draw circles at the edges of the clusters
             cv::circle(outputImage, pt1, 5, cv::Scalar(255, 0, 0), 2);
@@ -420,7 +423,7 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
                         AOI current_aoi;
                         current_aoi.closest_pixels_pair = std::make_pair(pt1, pt2);
                         current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
-                        computeAOI(frame_history, current_aoi, highestId);
+                        computeAOI(frame_history, current_aoi, points, highestId);
                     }
                 }
                 else if (frame_history.ns == "Vertical")
@@ -439,7 +442,7 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
                         AOI current_aoi;
                         current_aoi.closest_pixels_pair = std::make_pair(pt3, pt4);
                         current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
-                        computeAOI(frame_history, current_aoi, highestId);
+                        computeAOI(frame_history, current_aoi, points, highestId);
                     }
                 }
                 pairedRight[minIndex1] = true;
@@ -512,3 +515,4 @@ void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns,
 
     pub.publish(marker);
 }
+

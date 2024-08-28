@@ -44,7 +44,7 @@ struct AOI
     float confidence;                                    // Confidence of the AOI
     std::pair<cv::Point, cv::Point> closest_pixels_pair; // Closest pixels to the AOI
     std::pair<cv::Point, cv::Point> bounding_box;        // Bounding box defined by top-left and bottom-right points
-
+    std::vector<cv::Point> points;                       // Pixels within the AOI
     int area() const
     {
         int width = bounding_box.second.x - bounding_box.first.x;
