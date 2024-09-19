@@ -516,3 +516,24 @@ void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns,
     pub.publish(marker);
 }
 
+double find_depth(const cv::Mat &depth_image, int u, int v)
+{
+    std::vector<float> Z_values;
+    for (int i = -1; i < 2; ++i)
+    {
+        for (int j = -1; j < 2; ++j)
+        {
+            if (v + i >= 0 && v + i < depth_image.rows && u + j >= 0 && u + j < depth_image.cols)
+            {
+                Z_values.push_back(depth_image.at<float>(v + i, u + j) * 0.001f);
+            }
+        }
+    }
+
+    if (Z_values.size() > 0)
+    {
+        return std::accumulate(Z_values.begin(), Z_values.end(), 0.0) / Z_values.size();
+    }
+
+    return 0.0;
+}

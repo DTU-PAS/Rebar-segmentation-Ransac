@@ -114,3 +114,4 @@ std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat &img, con
 void deleteMarkers(ros::Publisher &pub);
 void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, ros::Publisher &pub,
                   const std::vector<int> &color);
+double find_depth(const cv::Mat &depth_image, int u, int v);

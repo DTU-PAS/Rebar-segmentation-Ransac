@@ -169,8 +169,8 @@ public:
             distance_from_camera_to_rebar = total_distance_to_camera / kept_points.size();
         }
 
-        ROS_INFO("Distance from rebar to background: %f", distance_from_rebar_to_background);
-        ROS_INFO("Distance from camera to rebar: %f", distance_from_camera_to_rebar);
+        // ROS_INFO("Distance from rebar to background: %f", distance_from_rebar_to_background);
+        // ROS_INFO("Distance from camera to rebar: %f", distance_from_camera_to_rebar);
 
         // Add non-kept points to inlier_cloud
         inlier_cloud->points.insert(inlier_cloud->points.end(), non_kept_points.begin(), non_kept_points.end());
@@ -423,28 +423,28 @@ public:
             {
 
                 // calculate the middle between the two closest pixels
-                int v = (frame_history.aoiList[i].closest_pixels_pair.first.y + frame_history.aoiList[i].closest_pixels_pair.second.y) / 2;
-                int u = (frame_history.aoiList[i].closest_pixels_pair.first.x + frame_history.aoiList[i].closest_pixels_pair.second.x) / 2;
+                // int v = (frame_history.aoiList[i].closest_pixels_pair.first.y + frame_history.aoiList[i].closest_pixels_pair.second.y) / 2;
+                // int u = (frame_history.aoiList[i].closest_pixels_pair.first.x + frame_history.aoiList[i].closest_pixels_pair.second.x) / 2;
 
-                cv::Mat pixel = cv::Mat::zeros(main_img.size(), CV_8U);
-                pixel.at<uchar>(v, u) = 255;
+                // cv::Mat pixel = cv::Mat::zeros(main_img.size(), CV_8U);
+                // pixel.at<uchar>(v, u) = 255;
 
-                cv::Mat pixel_rotated = rotate_image("Image", pixel, -angles.second, false);
+                // cv::Mat pixel_rotated = rotate_image("Image", pixel, -angles.second, false);
 
-                for (int i = 0; i < pixel_rotated.rows; ++i)
-                {
-                    for (int j = 0; j < pixel_rotated.cols; ++j)
-                    {
-                        if (pixel_rotated.at<uchar>(i, j) != 0)
-                        {
-                            v = i;
-                            u = j;
-                            break;
-                        }
-                    }
-                }
-                int v_depth = v;
-                int u_depth = u;
+                // for (int i = 0; i < pixel_rotated.rows; ++i)
+                // {
+                //     for (int j = 0; j < pixel_rotated.cols; ++j)
+                //     {
+                //         if (pixel_rotated.at<uchar>(i, j) != 0)
+                //         {
+                //             v = i;
+                //             u = j;
+                //             break;
+                //         }
+                //     }
+                // }
+                // int v_depth = v;
+                // int u_depth = u;
 
                 // if (frame_history.ns == "Vertical")
                 // {
@@ -459,32 +459,32 @@ public:
 
                 // std::cout << "Before v: " << v << " u: " << u << std::endl;
 
-                if (depth_image.empty())
-                {
-                    ROS_ERROR("Depth image is empty");
-                    return;
-                }
-                std::vector<float> Z_values;
-                for (int i = -1; i < 2; ++i)
-                {
-                    for (int j = -1; j < 2; ++j)
-                    {
-                        if (v_depth + i >= 0 && v_depth + i < depth_image.rows && u_depth + j >= 0 && u_depth + j < depth_image.cols)
-                        {
-                            Z_values.push_back(depth_image.at<float>(v_depth + i, u_depth + j) * 0.001f);
-                        }
-                    }
-                }
-                // TODO The depth point is not at the right position
-                float Z;
+                // if (depth_image.empty())
+                // {
+                //     ROS_ERROR("Depth image is empty");
+                //     return;
+                // }
+                // std::vector<float> Z_values;
+                // for (int i = -1; i < 2; ++i)
+                // {
+                //     for (int j = -1; j < 2; ++j)
+                //     {
+                //         if (v_depth + i >= 0 && v_depth + i < depth_image.rows && u_depth + j >= 0 && u_depth + j < depth_image.cols)
+                //         {
+                //             Z_values.push_back(depth_image.at<float>(v_depth + i, u_depth + j) * 0.001f);
+                //         }
+                //     }
+                // }
+                // // TODO The depth point is not at the right position
+                // float Z;
 
-                if (Z_values.size() > 0)
-                {
-                    Z = std::accumulate(Z_values.begin(), Z_values.end(), 0.0) / Z_values.size();
-                }
+                // if (Z_values.size() > 0)
+                // {
+                //     Z = std::accumulate(Z_values.begin(), Z_values.end(), 0.0) / Z_values.size();
+                // }
 
                 // cv::circle(depth_image_rgb, cv::Point(u_depth, v_depth), 1, cv::Scalar(0, 255, 0), 2);
-                cv::circle(main_img, cv::Point(u, v), 1, cv::Scalar(0, 255, 0), 2);
+                // cv::circle(main_img, cv::Point(u, v), 1, cv::Scalar(0, 255, 0), 2);
 
                 cv::Mat K;
 
@@ -494,59 +494,82 @@ public:
                 std::vector<cv::Point3f> horizontal_3d_coordinates;
                 if (frame_history.ns == "Vertical")
                 {
-                    for (size_t j = 0; j < frame_history.aoiList[i].points.size(); ++j)
-                    {
-                        cv::circle(depth_image_rgb, frame_history.aoiList[i].points[j] - cv::Point(15, 0), 1, cv::Scalar(255, 0, 0), 3);
-                    }
-                    cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y, distance_from_camera_to_rebar);
-                    cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y, distance_from_camera_to_rebar);
+                    // for (size_t j = 0; j < frame_history.aoiList[i].points.size(); ++j)
+                    // {
+                    //     cv::circle(depth_image_rgb, frame_history.aoiList[i].points[j] - cv::Point(15, 0), 1, cv::Scalar(255, 0, 0), 3);
+                    // }
+                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y) - distance_from_rebar_to_background;
+                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y) - distance_from_rebar_to_background;
+                    
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y), 1, cv::Scalar(0, 255, 0), 2);
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y), 1, cv::Scalar(0, 255, 0), 2);
+
+                    std::cout << "Z1: " << Z1 << " Z2: " << Z2 << std::endl;
+                    std::cout << "Distance from camera to rebar: " << distance_from_camera_to_rebar << std::endl;
+
+                    cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y, Z1);
+                    cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y, Z2);
+
+                    publish_ball(point1, 0.005, 0, frame_history.ns, ball_pub, {1, 0, 0, 1});
+                    publish_ball(point2, 0.005, 1, frame_history.ns, ball_pub, {1, 1, 0, 0});
 
                     double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
-                    std::cout << "Vertical Distance: " << distance * 100 << " mm" << std::endl;
+                    std::cout << "Vertical Distance: " << distance * 1000 << " mm" << std::endl;
                 }
                 else if (frame_history.ns == "Horizontal")
                 {
-                    for (size_t j = 0; j < frame_history.aoiList[i].points.size(); ++j)
-                    {
-                        cv::circle(depth_image_rgb, frame_history.aoiList[i].points[j] - cv::Point(15, 0), 1, cv::Scalar(0, 0, 255), 3);
-                    }
-                    cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y, distance_from_camera_to_rebar);
-                    cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y, distance_from_camera_to_rebar);
+                    // for (size_t j = 0; j < frame_history.aoiList[i].points.size(); ++j)
+                    // {
+                    //     cv::circle(depth_image_rgb, frame_history.aoiList[i].points[j] - cv::Point(15, 0), 1, cv::Scalar(0, 0, 255), 3);
+                    // }
+                    
+                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y + 20) - distance_from_rebar_to_background;
+                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y + 20) - distance_from_rebar_to_background;
+
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y + 20), 1, cv::Scalar(255, 0, 0), 2);
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y + 20), 1, cv::Scalar(255, 0, 0), 2);
+
+                    cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y, Z1);
+                    cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y, Z2);
+
+                    publish_ball(point1, 0.005, 2, frame_history.ns, ball_pub, {1, 1, 0, 1});
+                    publish_ball(point2, 0.005, 3, frame_history.ns, ball_pub, {1, 0, 1, 1});
 
                     double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
-                    std::cout << "Horizontal Distance: " << distance * 100 << " mm" << std::endl;
+                    std::cout << "Horizontal Distance: " << distance * 1000 << " mm" << std::endl;
                 }
 
                 // std::cout << "Average distance to camera: " << distance_from_camera_to_rebar << std::endl;
-                cv::Point3f coord;
-                if (frame_history.ns == "Vertical")
-                {
-                    coord = pixel_to_camera(K, u, v, Z - distance_from_rebar_to_background);
-                }
-                else if (frame_history.ns == "Horizontal")
-                {
-                    coord = pixel_to_camera(K, u, v, Z);
-                }
+                // cv::Point3f coord;
+                // if (frame_history.ns == "Vertical")
+                // {
+                //     // coord = pixel_to_camera(K, u, v, Z - distance_from_rebar_to_background);
+                //     coord = pixel_to_camera(K, u, v, Z - distance_from_rebar_to_background);
+                // }
+                // else if (frame_history.ns == "Horizontal")
+                // {
+                //     coord = pixel_to_camera(K, u, v, Z);
+                // }
 
                 // std::cout << "X: " << coord.x << " Y: " << coord.y << " Z: " << coord.z << std::endl;
 
                 // if (frame_history.ns == "Vertical")
                 // {
-                //     publish_ball(coord, 0.01, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 0, 1, 1});
+                //     publish_ball(coord, 0.005, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 0, 1, 1});
                 // }
                 // else if (frame_history.ns == "Horizontal")
                 // {
-                //     publish_ball(coord, 0.01, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 1, 0, 1});
+                //     publish_ball(coord, 0.005, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 1, 0, 1});
                 // }
 
                 // Publish the 3D coordinates
                 // for (size_t i = 0; i < vertical_3d_coordinates.size(); ++i)
                 // {
-                //     publish_ball(vertical_3d_coordinates[i], 0.01, i, "Vertical", ball_pub, {1, 0, 0, 1});
+                //     publish_ball(vertical_3d_coordinates[i], 0.005, i, "Vertical", ball_pub, {1, 0, 0, 1});
                 // }
                 // for (size_t i = 0; i < horizontal_3d_coordinates.size(); ++i)
                 // {
-                //     publish_ball(horizontal_3d_coordinates[i], 0.01, i, "Horizontal", ball_pub, {0, 0, 1, 1});
+                //     publish_ball(horizontal_3d_coordinates[i], 0.005, i, "Horizontal", ball_pub, {0, 0, 1, 1});
                 // }
             }
         }

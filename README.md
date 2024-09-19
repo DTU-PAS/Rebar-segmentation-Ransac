@@ -58,7 +58,10 @@ This project uses a poincloud and a depth image to segment exposed rebars and de
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## TODO
+Current method: The distance is calculated by taking the pixel of the center of the damaged area out of the depth image and calculating that into a distance from the camera to the rebar. The center pixel is likely hitting the background so the previoulsy calculated average distance from the board background to the rebars is added. However if the pixel is hitting the rebar in the depth image this calculation gives wrong results.
 
+Improved method: A better way would be to create a mesh structure out of the point cloud. 
 
 ## Built With
 [![build][build]][build-url] 
