@@ -3,6 +3,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
+#include <std_msgs/String.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_types.h>
 #include <pcl/ModelCoefficients.h>
@@ -11,6 +12,8 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <thread>
+#include <sstream>
+#include <iomanip>
 
 // Include dynamic reconfigure
 #include <dynamic_reconfigure/server.h>
@@ -30,6 +33,19 @@
 #include <rebar_seg.h>
 
 bool aligned_depth = false;
+
+double round(double var, int precision = 2)
+{
+    // if precision = 3 then
+    // 37.66666 * 10^3 =37666.66
+    // 37666.66 + .5 =37667.1    for rounding off value
+    // then type cast to <int> so value is 37667
+    // then divided by 10^3 so the value converted into 37.667
+    if (precision < 0)
+        precision = 0;
+    double value = (var >= 0) ? (int)(var * pow(10, precision) + .5) : (int)(var * pow(10, precision) - .5);
+    return value / pow(10, precision);
+}
 
 class RansacNode
 {
@@ -57,6 +73,7 @@ public:
         outlier_pub = nh.advertise<sensor_msgs::PointCloud2>("/outlier_points", 1);
         label_pub = nh.advertise<sensor_msgs::Image>("/label", 1);
         ball_pub = nh.advertise<visualization_msgs::Marker>("/ball", 1);
+        str_pub = nh.advertise<std_msgs::String>("/damage_string", 1000);
 
         pointcloud_sub = nh.subscribe("/camera/depth/color/points", 1, &RansacNode::pointcloud_callback, this);
         std::string camera_info_topic;
@@ -169,9 +186,6 @@ public:
             distance_from_camera_to_rebar = total_distance_to_camera / kept_points.size();
         }
 
-        // ROS_INFO("Distance from rebar to background: %f", distance_from_rebar_to_background);
-        // ROS_INFO("Distance from camera to rebar: %f", distance_from_camera_to_rebar);
-
         // Add non-kept points to inlier_cloud
         inlier_cloud->points.insert(inlier_cloud->points.end(), non_kept_points.begin(), non_kept_points.end());
         inlier_cloud->width = inlier_cloud->points.size();
@@ -221,18 +235,9 @@ public:
         fy = msg->K[4]; // Focal length in y direction
         cx = msg->K[2]; // Optical center x coordinate
         cy = msg->K[5]; // Optical center y coordinate
-        // Km = cv::Mat(3, 3, CV_64F, (void *)msg->K.data());
         img_height = msg->height;
         img_width = msg->width;
         img_header = msg->header;
-
-        // ROS_INFO("height, width: %i, %i", img_height, img_width);
-
-        // ROS_INFO("Intrinsic Parameters:");
-        // ROS_INFO("  fx: %f", fx);
-        // ROS_INFO("  fy: %f", fy);
-        // ROS_INFO("  cx: %f", cx);
-        // ROS_INFO("  cy: %f", cy);
     }
 
     void rgb_callback(const sensor_msgs::ImageConstPtr &rgb_msg)
@@ -396,6 +401,12 @@ public:
 
         publish_to_3d(frames_history_vertical);
         publish_to_3d(frames_history_horizontal);
+
+        exit_counter++;
+        if (exit_counter == 50)
+        {
+            exit(0);
+        }
     }
 
     void verticalProcess()
@@ -421,71 +432,6 @@ public:
         {
             if (frame_history.aoiList[i].confidence >= required_confidence)
             {
-
-                // calculate the middle between the two closest pixels
-                // int v = (frame_history.aoiList[i].closest_pixels_pair.first.y + frame_history.aoiList[i].closest_pixels_pair.second.y) / 2;
-                // int u = (frame_history.aoiList[i].closest_pixels_pair.first.x + frame_history.aoiList[i].closest_pixels_pair.second.x) / 2;
-
-                // cv::Mat pixel = cv::Mat::zeros(main_img.size(), CV_8U);
-                // pixel.at<uchar>(v, u) = 255;
-
-                // cv::Mat pixel_rotated = rotate_image("Image", pixel, -angles.second, false);
-
-                // for (int i = 0; i < pixel_rotated.rows; ++i)
-                // {
-                //     for (int j = 0; j < pixel_rotated.cols; ++j)
-                //     {
-                //         if (pixel_rotated.at<uchar>(i, j) != 0)
-                //         {
-                //             v = i;
-                //             u = j;
-                //             break;
-                //         }
-                //     }
-                // }
-                // int v_depth = v;
-                // int u_depth = u;
-
-                // if (frame_history.ns == "Vertical")
-                // {
-                //     v_depth = v;
-                //     u_depth = u -15;
-                // }
-                // else if (frame_history.ns == "Horizontal")
-                // {
-                //     v_depth = v;
-                //     u_depth = u;
-                // }
-
-                // std::cout << "Before v: " << v << " u: " << u << std::endl;
-
-                // if (depth_image.empty())
-                // {
-                //     ROS_ERROR("Depth image is empty");
-                //     return;
-                // }
-                // std::vector<float> Z_values;
-                // for (int i = -1; i < 2; ++i)
-                // {
-                //     for (int j = -1; j < 2; ++j)
-                //     {
-                //         if (v_depth + i >= 0 && v_depth + i < depth_image.rows && u_depth + j >= 0 && u_depth + j < depth_image.cols)
-                //         {
-                //             Z_values.push_back(depth_image.at<float>(v_depth + i, u_depth + j) * 0.001f);
-                //         }
-                //     }
-                // }
-                // // TODO The depth point is not at the right position
-                // float Z;
-
-                // if (Z_values.size() > 0)
-                // {
-                //     Z = std::accumulate(Z_values.begin(), Z_values.end(), 0.0) / Z_values.size();
-                // }
-
-                // cv::circle(depth_image_rgb, cv::Point(u_depth, v_depth), 1, cv::Scalar(0, 255, 0), 2);
-                // cv::circle(main_img, cv::Point(u, v), 1, cv::Scalar(0, 255, 0), 2);
-
                 cv::Mat K;
 
                 K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
@@ -504,25 +450,33 @@ public:
                     cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y), 1, cv::Scalar(0, 255, 0), 2);
                     cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y), 1, cv::Scalar(0, 255, 0), 2);
 
-                    std::cout << "Z1: " << Z1 << " Z2: " << Z2 << std::endl;
-                    std::cout << "Distance from camera to rebar: " << distance_from_camera_to_rebar << std::endl;
-
                     cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y, Z1);
                     cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y, Z2);
 
                     publish_ball(point1, 0.005, 0, frame_history.ns, ball_pub, {1, 0, 0, 1});
                     publish_ball(point2, 0.005, 1, frame_history.ns, ball_pub, {1, 1, 0, 0});
 
+                    std::ostringstream damage_stream;
+
+                    // Set the output to fixed-point notation and round to four decimal places
+                    damage_stream << std::fixed << std::setprecision(4)
+                                  << frame_history.aoiList[i].id << "V,"
+                                  << point1.x << "," << point1.y << "," << point1.z << ","
+                                  << point2.x << "," << point2.y << "," << point2.z;
+
+                    // Convert the stream to a string
+                    std::string damage = damage_stream.str();
+                    std_msgs::String msg;
+                    msg.data = damage;
+
+                    std::cout << damage << std::endl;
+
+                    str_pub.publish(msg);
+
                     double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
-                    std::cout << "Vertical Distance: " << distance * 1000 << " mm" << std::endl;
                 }
                 else if (frame_history.ns == "Horizontal")
-                {
-                    // for (size_t j = 0; j < frame_history.aoiList[i].points.size(); ++j)
-                    // {
-                    //     cv::circle(depth_image_rgb, frame_history.aoiList[i].points[j] - cv::Point(15, 0), 1, cv::Scalar(0, 0, 255), 3);
-                    // }
-                    
+                {   
                     double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y + 20) - distance_from_rebar_to_background;
                     double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y + 20) - distance_from_rebar_to_background;
 
@@ -535,47 +489,31 @@ public:
                     publish_ball(point1, 0.005, 2, frame_history.ns, ball_pub, {1, 1, 0, 1});
                     publish_ball(point2, 0.005, 3, frame_history.ns, ball_pub, {1, 0, 1, 1});
 
+
+                    // Create an ostringstream for building the string with rounded values
+                    std::ostringstream damage_stream;
+
+                    // Set the output to fixed-point notation and round to four decimal places
+                    damage_stream << std::fixed << std::setprecision(4)
+                                  << frame_history.aoiList[i].id << "H,"
+                                  << point1.x << "," << point1.y << "," << point1.z << ","
+                                  << point2.x << "," << point2.y << "," << point2.z;
+
+                    // Convert the stream to a string
+                    std::string damage = damage_stream.str();
+                    std_msgs::String msg;
+                    msg.data = damage;
+
+                    std::cout << damage << std::endl;
+
+                    str_pub.publish(msg);
+
+                    // publish_string(frame_history.aoiList[i].id, point1, point2);
+
                     double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
-                    std::cout << "Horizontal Distance: " << distance * 1000 << " mm" << std::endl;
                 }
-
-                // std::cout << "Average distance to camera: " << distance_from_camera_to_rebar << std::endl;
-                // cv::Point3f coord;
-                // if (frame_history.ns == "Vertical")
-                // {
-                //     // coord = pixel_to_camera(K, u, v, Z - distance_from_rebar_to_background);
-                //     coord = pixel_to_camera(K, u, v, Z - distance_from_rebar_to_background);
-                // }
-                // else if (frame_history.ns == "Horizontal")
-                // {
-                //     coord = pixel_to_camera(K, u, v, Z);
-                // }
-
-                // std::cout << "X: " << coord.x << " Y: " << coord.y << " Z: " << coord.z << std::endl;
-
-                // if (frame_history.ns == "Vertical")
-                // {
-                //     publish_ball(coord, 0.005, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 0, 1, 1});
-                // }
-                // else if (frame_history.ns == "Horizontal")
-                // {
-                //     publish_ball(coord, 0.005, frame_history.aoiList[i].id, frame_history.ns, ball_pub, {1, 1, 0, 1});
-                // }
-
-                // Publish the 3D coordinates
-                // for (size_t i = 0; i < vertical_3d_coordinates.size(); ++i)
-                // {
-                //     publish_ball(vertical_3d_coordinates[i], 0.005, i, "Vertical", ball_pub, {1, 0, 0, 1});
-                // }
-                // for (size_t i = 0; i < horizontal_3d_coordinates.size(); ++i)
-                // {
-                //     publish_ball(horizontal_3d_coordinates[i], 0.005, i, "Horizontal", ball_pub, {0, 0, 1, 1});
-                // }
             }
         }
-        // cv::imshow("Main_Image", main_img);
-        cv::imshow("Depth_Image", depth_image_rgb);
-        cv::waitKey(1);
     }
 
 private:
@@ -595,6 +533,7 @@ private:
     ros::Publisher outlier_pub;
     ros::Publisher label_pub;
     ros::Publisher ball_pub;
+    ros::Publisher str_pub;
 
     // Subscribers
     ros::Subscriber pointcloud_sub;
@@ -631,6 +570,8 @@ private:
     bool show_roi = false;
     bool show_final_image = true;
     bool show_angles = false;
+
+    int exit_counter = 0;
 };
 
 int main(int argc, char **argv)
@@ -660,6 +601,7 @@ int main(int argc, char **argv)
     server.setCallback(f);
 
     ros::spin();
+
 
     return 0;
 }

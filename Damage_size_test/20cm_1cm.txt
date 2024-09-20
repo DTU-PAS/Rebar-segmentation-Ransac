@@ -1,0 +1,465 @@
+[0m[ INFO] [1724923675.878130205]: Aligned depth to color camera info topic found[0m
+PCL Version: 101000
+OpenCV Version: 4.2.0
+C++14
+[0m[ INFO] [1724923675.882316977]: Camera info topic: /camera/depth/camera_info[0m
+[0m[ INFO] [1724923676.381413221]: Distance from rebar to background: 0.046410[0m
+[0m[ INFO] [1724923676.381449176]: Distance from camera to rebar: 0.230501[0m
+[0m[ INFO] [1724923676.616242672]: Distance from rebar to background: 0.046345[0m
+[0m[ INFO] [1724923676.616269964]: Distance from camera to rebar: 0.230508[0m
+[0m[ INFO] [1724923676.815275636]: Distance from rebar to background: 0.046294[0m
+[0m[ INFO] [1724923676.815304989]: Distance from camera to rebar: 0.230491[0m
+[0m[ INFO] [1724923677.071451145]: Distance from rebar to background: 0.046283[0m
+[0m[ INFO] [1724923677.071477828]: Distance from camera to rebar: 0.230514[0m
+[0m[ INFO] [1724923677.263928940]: Distance from rebar to background: 0.046365[0m
+[0m[ INFO] [1724923677.263967660]: Distance from camera to rebar: 0.230560[0m
+[0m[ INFO] [1724923677.492039735]: Distance from rebar to background: 0.046369[0m
+[0m[ INFO] [1724923677.492065946]: Distance from camera to rebar: 0.230517[0m
+[0m[ INFO] [1724923677.668600036]: Distance from rebar to background: 0.046371[0m
+[0m[ INFO] [1724923677.668623752]: Distance from camera to rebar: 0.230528[0m
+[0m[ INFO] [1724923677.861615911]: Distance from rebar to background: 0.046353[0m
+[0m[ INFO] [1724923677.861651964]: Distance from camera to rebar: 0.230477[0m
+[0m[ INFO] [1724923678.054675658]: Distance from rebar to background: 0.046435[0m
+[0m[ INFO] [1724923678.054701489]: Distance from camera to rebar: 0.230523[0m
+[0m[ INFO] [1724923678.306121900]: Distance from rebar to background: 0.046312[0m
+[0m[ INFO] [1724923678.306161452]: Distance from camera to rebar: 0.230549[0m
+Vertical Distance: 9.09607 mm
+[0m[ INFO] [1724923678.538849128]: Distance from rebar to background: 0.046384[0m
+[0m[ INFO] [1724923678.538873628]: Distance from camera to rebar: 0.230487[0m
+Vertical Distance: 8.69281 mm
+[0m[ INFO] [1724923678.723287629]: Distance from rebar to background: 0.046306[0m
+[0m[ INFO] [1724923678.723322042]: Distance from camera to rebar: 0.230491[0m
+Vertical Distance: 8.56075 mm
+[0m[ INFO] [1724923678.902832533]: Distance from rebar to background: 0.046349[0m
+[0m[ INFO] [1724923678.902858518]: Distance from camera to rebar: 0.230515[0m
+Vertical Distance: 8.61144 mm
+[0m[ INFO] [1724923679.065338747]: Distance from rebar to background: 0.046404[0m
+[0m[ INFO] [1724923679.065367586]: Distance from camera to rebar: 0.230454[0m
+Vertical Distance: 9.21686 mm
+[0m[ INFO] [1724923679.276163336]: Distance from rebar to background: 0.046382[0m
+[0m[ INFO] [1724923679.276189999]: Distance from camera to rebar: 0.230565[0m
+Vertical Distance: 8.61334 mm
+[0m[ INFO] [1724923679.448846621]: Distance from rebar to background: 0.046406[0m
+[0m[ INFO] [1724923679.448871383]: Distance from camera to rebar: 0.230474[0m
+Vertical Distance: 8.60993 mm
+[0m[ INFO] [1724923679.610902770]: Distance from rebar to background: 0.046393[0m
+[0m[ INFO] [1724923679.610925202]: Distance from camera to rebar: 0.230508[0m
+Vertical Distance: 8.6936 mm
+[0m[ INFO] [1724923679.797864478]: Distance from rebar to background: 0.046354[0m
+[0m[ INFO] [1724923679.797887043]: Distance from camera to rebar: 0.230530[0m
+Vertical Distance: 8.56217 mm
+[0m[ INFO] [1724923680.030700151]: Distance from rebar to background: 0.046347[0m
+[0m[ INFO] [1724923680.030739592]: Distance from camera to rebar: 0.230485[0m
+Vertical Distance: 8.9513 mm
+[0m[ INFO] [1724923680.217962849]: Distance from rebar to background: 0.046316[0m
+[0m[ INFO] [1724923680.217996671]: Distance from camera to rebar: 0.230482[0m
+Vertical Distance: 8.61024 mm
+[0m[ INFO] [1724923680.410250691]: Distance from rebar to background: 0.046382[0m
+[0m[ INFO] [1724923680.410275510]: Distance from camera to rebar: 0.230470[0m
+Vertical Distance: 9.09293 mm
+[0m[ INFO] [1724923680.652503850]: Distance from rebar to background: 0.046228[0m
+[0m[ INFO] [1724923680.652523338]: Distance from camera to rebar: 0.230516[0m
+Vertical Distance: 9.62792 mm
+[0m[ INFO] [1724923680.872482959]: Distance from rebar to background: 0.046348[0m
+[0m[ INFO] [1724923680.872508285]: Distance from camera to rebar: 0.230537[0m
+Vertical Distance: 9.32785 mm
+[0m[ INFO] [1724923681.057484497]: Distance from rebar to background: 0.046340[0m
+[0m[ INFO] [1724923681.057509094]: Distance from camera to rebar: 0.230495[0m
+Vertical Distance: 9.14083 mm
+[0m[ INFO] [1724923681.224989168]: Distance from rebar to background: 0.046387[0m
+[0m[ INFO] [1724923681.225012230]: Distance from camera to rebar: 0.230508[0m
+Vertical Distance: 8.5447 mm
+[0m[ INFO] [1724923681.418254576]: Distance from rebar to background: 0.046440[0m
+[0m[ INFO] [1724923681.418275027]: Distance from camera to rebar: 0.230436[0m
+Vertical Distance: 8.69087 mm
+[0m[ INFO] [1724923681.642717011]: Distance from rebar to background: 0.046367[0m
+[0m[ INFO] [1724923681.642738925]: Distance from camera to rebar: 0.230456[0m
+Vertical Distance: 9.32457 mm
+[0m[ INFO] [1724923681.807930139]: Distance from rebar to background: 0.046385[0m
+[0m[ INFO] [1724923681.807953997]: Distance from camera to rebar: 0.230502[0m
+Vertical Distance: 9.09418 mm
+[0m[ INFO] [1724923681.990206425]: Distance from rebar to background: 0.046336[0m
+[0m[ INFO] [1724923681.990241211]: Distance from camera to rebar: 0.230501[0m
+Vertical Distance: 9.46297 mm
+[0m[ INFO] [1724923682.242345153]: Distance from rebar to background: 0.046383[0m
+[0m[ INFO] [1724923682.242372422]: Distance from camera to rebar: 0.230480[0m
+Vertical Distance: 8.02747 mm
+[0m[ INFO] [1724923682.459070059]: Distance from rebar to background: 0.046339[0m
+[0m[ INFO] [1724923682.459105635]: Distance from camera to rebar: 0.230492[0m
+Vertical Distance: 9.2184 mm
+[0m[ INFO] [1724923682.638388994]: Distance from rebar to background: 0.046364[0m
+[0m[ INFO] [1724923682.638414697]: Distance from camera to rebar: 0.230534[0m
+Vertical Distance: 9.22006 mm
+[0m[ INFO] [1724923682.846897690]: Distance from rebar to background: 0.046320[0m
+[0m[ INFO] [1724923682.846923663]: Distance from camera to rebar: 0.230532[0m
+Vertical Distance: 8.62865 mm
+[0m[ INFO] [1724923683.035261556]: Distance from rebar to background: 0.046363[0m
+[0m[ INFO] [1724923683.035301393]: Distance from camera to rebar: 0.230543[0m
+Vertical Distance: 9.46471 mm
+[0m[ INFO] [1724923683.285498142]: Distance from rebar to background: 0.046296[0m
+[0m[ INFO] [1724923683.285532012]: Distance from camera to rebar: 0.230528[0m
+Vertical Distance: 8.54542 mm
+[0m[ INFO] [1724923683.547356574]: Distance from rebar to background: 0.046363[0m
+[0m[ INFO] [1724923683.547409399]: Distance from camera to rebar: 0.230507[0m
+Vertical Distance: 8.54465 mm
+[0m[ INFO] [1724923683.794740883]: Distance from rebar to background: 0.046442[0m
+[0m[ INFO] [1724923683.794763585]: Distance from camera to rebar: 0.230430[0m
+Vertical Distance: 9.07565 mm
+[0m[ INFO] [1724923683.974929035]: Distance from rebar to background: 0.046422[0m
+[0m[ INFO] [1724923683.974961270]: Distance from camera to rebar: 0.230499[0m
+Vertical Distance: 9.14098 mm
+[0m[ INFO] [1724923684.223730579]: Distance from rebar to background: 0.046374[0m
+[0m[ INFO] [1724923684.223754086]: Distance from camera to rebar: 0.230465[0m
+Vertical Distance: 8.95054 mm
+[0m[ INFO] [1724923684.478050946]: Distance from rebar to background: 0.046329[0m
+[0m[ INFO] [1724923684.478085219]: Distance from camera to rebar: 0.230475[0m
+Vertical Distance: 8.56013 mm
+[0m[ INFO] [1724923684.721583075]: Distance from rebar to background: 0.046434[0m
+[0m[ INFO] [1724923684.721604709]: Distance from camera to rebar: 0.230531[0m
+Vertical Distance: 8.56224 mm
+[0m[ INFO] [1724923684.969759249]: Distance from rebar to background: 0.046412[0m
+[0m[ INFO] [1724923684.969800559]: Distance from camera to rebar: 0.230498[0m
+Vertical Distance: 8.61083 mm
+[0m[ INFO] [1724923685.151084376]: Distance from rebar to background: 0.046366[0m
+[0m[ INFO] [1724923685.151104132]: Distance from camera to rebar: 0.230461[0m
+Vertical Distance: 8.60942 mm
+[0m[ INFO] [1724923685.349172758]: Distance from rebar to background: 0.046321[0m
+[0m[ INFO] [1724923685.349195610]: Distance from camera to rebar: 0.230525[0m
+Vertical Distance: 8.54533 mm
+[0m[ INFO] [1724923685.547572504]: Distance from rebar to background: 0.046394[0m
+[0m[ INFO] [1724923685.547596097]: Distance from camera to rebar: 0.230514[0m
+Vertical Distance: 8.95242 mm
+[0m[ INFO] [1724923685.740815790]: Distance from rebar to background: 0.046387[0m
+[0m[ INFO] [1724923685.740843754]: Distance from camera to rebar: 0.230509[0m
+Vertical Distance: 8.54474 mm
+[0m[ INFO] [1724923685.926665028]: Distance from rebar to background: 0.046336[0m
+[0m[ INFO] [1724923685.926688444]: Distance from camera to rebar: 0.230497[0m
+Vertical Distance: 9.32623 mm
+[0m[ INFO] [1724923686.148818700]: Distance from rebar to background: 0.046411[0m
+[0m[ INFO] [1724923686.148850692]: Distance from camera to rebar: 0.230494[0m
+Vertical Distance: 8.54417 mm
+[0m[ INFO] [1724923686.379151395]: Distance from rebar to background: 0.046366[0m
+[0m[ INFO] [1724923686.379187452]: Distance from camera to rebar: 0.230518[0m
+Vertical Distance: 8.69399 mm
+[0m[ INFO] [1724923686.584554003]: Distance from rebar to background: 0.046391[0m
+[0m[ INFO] [1724923686.584579657]: Distance from camera to rebar: 0.230458[0m
+Vertical Distance: 8.55952 mm
+[0m[ INFO] [1724923686.848996265]: Distance from rebar to background: 0.046353[0m
+[0m[ INFO] [1724923686.849025053]: Distance from camera to rebar: 0.230444[0m
+Vertical Distance: 8.6912 mm
+[0m[ INFO] [1724923687.119626097]: Distance from rebar to background: 0.046385[0m
+[0m[ INFO] [1724923687.119675799]: Distance from camera to rebar: 0.230449[0m
+Vertical Distance: 8.55919 mm
+[0m[ INFO] [1724923687.411993716]: Distance from rebar to background: 0.046418[0m
+[0m[ INFO] [1724923687.412039914]: Distance from camera to rebar: 0.230508[0m
+Vertical Distance: 9.14134 mm
+[0m[ INFO] [1724923687.694887692]: Distance from rebar to background: 0.046351[0m
+[0m[ INFO] [1724923687.694924613]: Distance from camera to rebar: 0.230497[0m
+Vertical Distance: 9.32623 mm
+[0m[ INFO] [1724923687.982175830]: Distance from rebar to background: 0.046245[0m
+[0m[ INFO] [1724923687.982211914]: Distance from camera to rebar: 0.230520[0m
+Vertical Distance: 9.1262 mm
+[0m[ INFO] [1724923688.275798821]: Distance from rebar to background: 0.046366[0m
+[0m[ INFO] [1724923688.275833992]: Distance from camera to rebar: 0.230504[0m
+Vertical Distance: 9.55309 mm
+[0m[ INFO] [1724923688.582747244]: Distance from rebar to background: 0.046387[0m
+[0m[ INFO] [1724923688.582775855]: Distance from camera to rebar: 0.230485[0m
+Vertical Distance: 8.80678 mm
+[0m[ INFO] [1724923688.938466892]: Distance from rebar to background: 0.046353[0m
+[0m[ INFO] [1724923688.938525128]: Distance from camera to rebar: 0.230512[0m
+Vertical Distance: 9.09459 mm
+[0m[ INFO] [1724923689.267092605]: Distance from rebar to background: 0.046333[0m
+[0m[ INFO] [1724923689.267147390]: Distance from camera to rebar: 0.230539[0m
+Vertical Distance: 9.55455 mm
+[0m[ INFO] [1724923689.601294695]: Distance from rebar to background: 0.046331[0m
+[0m[ INFO] [1724923689.601327478]: Distance from camera to rebar: 0.230522[0m
+Vertical Distance: 8.61172 mm
+[0m[ INFO] [1724923689.932054037]: Distance from rebar to background: 0.046374[0m
+[0m[ INFO] [1724923689.932102194]: Distance from camera to rebar: 0.230480[0m
+Vertical Distance: 8.56033 mm
+[0m[ INFO] [1724923690.268034339]: Distance from rebar to background: 0.046351[0m
+[0m[ INFO] [1724923690.268083118]: Distance from camera to rebar: 0.230526[0m
+Vertical Distance: 9.32739 mm
+[0m[ INFO] [1724923690.586201433]: Distance from rebar to background: 0.046425[0m
+[0m[ INFO] [1724923690.586246683]: Distance from camera to rebar: 0.230476[0m
+Vertical Distance: 9.14008 mm
+[0m[ INFO] [1724923690.942067284]: Distance from rebar to background: 0.046255[0m
+[0m[ INFO] [1724923690.942101443]: Distance from camera to rebar: 0.230517[0m
+Vertical Distance: 9.32703 mm
+[0m[ INFO] [1724923691.315113606]: Distance from rebar to background: 0.046314[0m
+[0m[ INFO] [1724923691.315163291]: Distance from camera to rebar: 0.230509[0m
+Vertical Distance: 8.61122 mm
+[0m[ INFO] [1724923691.606237386]: Distance from rebar to background: 0.046318[0m
+[0m[ INFO] [1724923691.606273335]: Distance from camera to rebar: 0.230449[0m
+Vertical Distance: 9.55081 mm
+[0m[ INFO] [1724923691.902647244]: Distance from rebar to background: 0.046409[0m
+[0m[ INFO] [1724923691.902680908]: Distance from camera to rebar: 0.230497[0m
+Vertical Distance: 8.80727 mm
+[0m[ INFO] [1724923692.277205052]: Distance from rebar to background: 0.046305[0m
+[0m[ INFO] [1724923692.277255748]: Distance from camera to rebar: 0.230525[0m
+Vertical Distance: 8.54533 mm
+[0m[ INFO] [1724923692.615695408]: Distance from rebar to background: 0.046435[0m
+[0m[ INFO] [1724923692.615726929]: Distance from camera to rebar: 0.230428[0m
+Vertical Distance: 8.69057 mm
+[0m[ INFO] [1724923692.953886832]: Distance from rebar to background: 0.046246[0m
+[0m[ INFO] [1724923692.953917783]: Distance from camera to rebar: 0.230500[0m
+Vertical Distance: 8.69328 mm
+[0m[ INFO] [1724923693.271559670]: Distance from rebar to background: 0.046414[0m
+[0m[ INFO] [1724923693.271593460]: Distance from camera to rebar: 0.230437[0m
+Vertical Distance: 8.69092 mm
+[0m[ INFO] [1724923693.610075917]: Distance from rebar to background: 0.046371[0m
+[0m[ INFO] [1724923693.610127196]: Distance from camera to rebar: 0.230499[0m
+Vertical Distance: 9.14099 mm
+[0m[ INFO] [1724923693.945706810]: Distance from rebar to background: 0.046357[0m
+[0m[ INFO] [1724923693.945736561]: Distance from camera to rebar: 0.230496[0m
+Vertical Distance: 9.07829 mm
+[0m[ INFO] [1724923694.240428372]: Distance from rebar to background: 0.046342[0m
+[0m[ INFO] [1724923694.240481208]: Distance from camera to rebar: 0.230490[0m
+Vertical Distance: 9.46253 mm
+[0m[ INFO] [1724923694.613205082]: Distance from rebar to background: 0.046354[0m
+[0m[ INFO] [1724923694.613247165]: Distance from camera to rebar: 0.230442[0m
+Vertical Distance: 8.94964 mm
+[0m[ INFO] [1724923695.033500713]: Distance from rebar to background: 0.046307[0m
+[0m[ INFO] [1724923695.033560054]: Distance from camera to rebar: 0.230494[0m
+Vertical Distance: 8.08107 mm
+[0m[ INFO] [1724923695.401925756]: Distance from rebar to background: 0.046347[0m
+[0m[ INFO] [1724923695.401974352]: Distance from camera to rebar: 0.230501[0m
+Vertical Distance: 8.80739 mm
+[0m[ INFO] [1724923695.735120786]: Distance from rebar to background: 0.046415[0m
+[0m[ INFO] [1724923695.735155238]: Distance from camera to rebar: 0.230462[0m
+Vertical Distance: 8.55964 mm
+[0m[ INFO] [1724923696.033845617]: Distance from rebar to background: 0.046365[0m
+[0m[ INFO] [1724923696.033878681]: Distance from camera to rebar: 0.230473[0m
+Vertical Distance: 8.56005 mm
+[0m[ INFO] [1724923696.391374249]: Distance from rebar to background: 0.046303[0m
+[0m[ INFO] [1724923696.391417743]: Distance from camera to rebar: 0.230485[0m
+Vertical Distance: 8.61032 mm
+[0m[ INFO] [1724923696.727056879]: Distance from rebar to background: 0.046261[0m
+[0m[ INFO] [1724923696.727109482]: Distance from camera to rebar: 0.230521[0m
+Vertical Distance: 9.12627 mm
+[0m[ INFO] [1724923697.133758952]: Distance from rebar to background: 0.046307[0m
+[0m[ INFO] [1724923697.133805302]: Distance from camera to rebar: 0.230517[0m
+Vertical Distance: 8.54502 mm
+[0m[ INFO] [1724923697.491539150]: Distance from rebar to background: 0.046298[0m
+[0m[ INFO] [1724923697.491591112]: Distance from camera to rebar: 0.230466[0m
+Vertical Distance: 8.54316 mm
+[0m[ INFO] [1724923697.865864356]: Distance from rebar to background: 0.046351[0m
+[0m[ INFO] [1724923697.865894062]: Distance from camera to rebar: 0.230493[0m
+Vertical Distance: 8.54414 mm
+[0m[ INFO] [1724923698.174662818]: Distance from rebar to background: 0.046353[0m
+[0m[ INFO] [1724923698.174699891]: Distance from camera to rebar: 0.230515[0m
+Vertical Distance: 9.09472 mm
+[0m[ INFO] [1724923698.471810281]: Distance from rebar to background: 0.046327[0m
+[0m[ INFO] [1724923698.471844556]: Distance from camera to rebar: 0.230520[0m
+Vertical Distance: 8.61163 mm
+[0m[ INFO] [1724923698.800289888]: Distance from rebar to background: 0.046300[0m
+[0m[ INFO] [1724923698.800336503]: Distance from camera to rebar: 0.230496[0m
+Vertical Distance: 9.55275 mm
+[0m[ INFO] [1724923699.116522516]: Distance from rebar to background: 0.046323[0m
+[0m[ INFO] [1724923699.116559812]: Distance from camera to rebar: 0.230507[0m
+Vertical Distance: 9.0944 mm
+[0m[ INFO] [1724923699.420117622]: Distance from rebar to background: 0.046354[0m
+[0m[ INFO] [1724923699.420159866]: Distance from camera to rebar: 0.230457[0m
+Vertical Distance: 8.69168 mm
+[0m[ INFO] [1724923699.789037308]: Distance from rebar to background: 0.046444[0m
+[0m[ INFO] [1724923699.789087516]: Distance from camera to rebar: 0.230466[0m
+Vertical Distance: 9.13968 mm
+[0m[ INFO] [1724923700.077198246]: Distance from rebar to background: 0.046381[0m
+[0m[ INFO] [1724923700.077231608]: Distance from camera to rebar: 0.230483[0m
+Vertical Distance: 8.56043 mm
+[0m[ INFO] [1724923700.393274100]: Distance from rebar to background: 0.046353[0m
+[0m[ INFO] [1724923700.393306988]: Distance from camera to rebar: 0.230530[0m
+Vertical Distance: 8.69442 mm
+[0m[ INFO] [1724923700.691648735]: Distance from rebar to background: 0.046339[0m
+[0m[ INFO] [1724923700.691683113]: Distance from camera to rebar: 0.230481[0m
+Vertical Distance: 8.54368 mm
+[0m[ INFO] [1724923701.013540468]: Distance from rebar to background: 0.046375[0m
+[0m[ INFO] [1724923701.013576129]: Distance from camera to rebar: 0.230536[0m
+Vertical Distance: 9.14247 mm
+[0m[ INFO] [1724923701.346591094]: Distance from rebar to background: 0.046368[0m
+[0m[ INFO] [1724923701.346639683]: Distance from camera to rebar: 0.230452[0m
+Vertical Distance: 8.83785 mm
+[0m[ INFO] [1724923701.760306484]: Distance from rebar to background: 0.046326[0m
+[0m[ INFO] [1724923701.760357419]: Distance from camera to rebar: 0.230519[0m
+Vertical Distance: 8.80808 mm
+[0m[ INFO] [1724923702.272970150]: Distance from rebar to background: 0.046378[0m
+[0m[ INFO] [1724923702.273022639]: Distance from camera to rebar: 0.230482[0m
+Vertical Distance: 9.14033 mm
+[0m[ INFO] [1724923702.735899250]: Distance from rebar to background: 0.046371[0m
+[0m[ INFO] [1724923702.735945728]: Distance from camera to rebar: 0.230452[0m
+Vertical Distance: 8.5593 mm
+[0m[ INFO] [1724923703.109119922]: Distance from rebar to background: 0.046413[0m
+[0m[ INFO] [1724923703.109154004]: Distance from camera to rebar: 0.230463[0m
+Vertical Distance: 9.09267 mm
+[0m[ INFO] [1724923703.471171230]: Distance from rebar to background: 0.046349[0m
+[0m[ INFO] [1724923703.471224533]: Distance from camera to rebar: 0.230465[0m
+Vertical Distance: 9.32493 mm
+[0m[ INFO] [1724923703.862156979]: Distance from rebar to background: 0.046359[0m
+[0m[ INFO] [1724923703.862210422]: Distance from camera to rebar: 0.230514[0m
+Vertical Distance: 8.56158 mm
+[0m[ INFO] [1724923704.158290776]: Distance from rebar to background: 0.046381[0m
+[0m[ INFO] [1724923704.158325187]: Distance from camera to rebar: 0.230529[0m
+Vertical Distance: 8.56216 mm
+[0m[ INFO] [1724923704.487872494]: Distance from rebar to background: 0.046474[0m
+[0m[ INFO] [1724923704.487909379]: Distance from camera to rebar: 0.230488[0m
+Vertical Distance: 8.61043 mm
+[0m[ INFO] [1724923704.816381279]: Distance from rebar to background: 0.046358[0m
+[0m[ INFO] [1724923704.816422092]: Distance from camera to rebar: 0.230487[0m
+Vertical Distance: 8.6104 mm
+[0m[ INFO] [1724923705.112584860]: Distance from rebar to background: 0.046279[0m
+[0m[ INFO] [1724923705.112620523]: Distance from camera to rebar: 0.230520[0m
+Vertical Distance: 8.56182 mm
+[0m[ INFO] [1724923705.448839069]: Distance from rebar to background: 0.046340[0m
+[0m[ INFO] [1724923705.448880717]: Distance from camera to rebar: 0.230431[0m
+Vertical Distance: 8.60832 mm
+[0m[ INFO] [1724923705.813338026]: Distance from rebar to background: 0.046346[0m
+[0m[ INFO] [1724923705.813375568]: Distance from camera to rebar: 0.230515[0m
+Vertical Distance: 8.80793 mm
+[0m[ INFO] [1724923706.177328005]: Distance from rebar to background: 0.046278[0m
+[0m[ INFO] [1724923706.177375414]: Distance from camera to rebar: 0.230531[0m
+Vertical Distance: 8.56221 mm
+[0m[ INFO] [1724923706.537056359]: Distance from rebar to background: 0.046384[0m
+[0m[ INFO] [1724923706.537089373]: Distance from camera to rebar: 0.230495[0m
+Vertical Distance: 8.62725 mm
+[0m[ INFO] [1724923706.826218625]: Distance from rebar to background: 0.046388[0m
+[0m[ INFO] [1724923706.826249775]: Distance from camera to rebar: 0.230518[0m
+Vertical Distance: 9.46371 mm
+[0m[ INFO] [1724923707.129270849]: Distance from rebar to background: 0.046361[0m
+[0m[ INFO] [1724923707.129306563]: Distance from camera to rebar: 0.230443[0m
+Vertical Distance: 9.13879 mm
+[0m[ INFO] [1724923707.478166779]: Distance from rebar to background: 0.046327[0m
+[0m[ INFO] [1724923707.478216216]: Distance from camera to rebar: 0.230441[0m
+Vertical Distance: 8.55889 mm
+[0m[ INFO] [1724923707.804348559]: Distance from rebar to background: 0.046451[0m
+[0m[ INFO] [1724923707.804406869]: Distance from camera to rebar: 0.230465[0m
+Vertical Distance: 8.69196 mm
+[0m[ INFO] [1724923708.122819948]: Distance from rebar to background: 0.046373[0m
+[0m[ INFO] [1724923708.122855422]: Distance from camera to rebar: 0.230449[0m
+Vertical Distance: 9.32428 mm
+[0m[ INFO] [1724923708.448697641]: Distance from rebar to background: 0.046309[0m
+[0m[ INFO] [1724923708.448734407]: Distance from camera to rebar: 0.230531[0m
+Vertical Distance: 8.69445 mm
+[0m[ INFO] [1724923708.814645228]: Distance from rebar to background: 0.046369[0m
+[0m[ INFO] [1724923708.814682424]: Distance from camera to rebar: 0.230475[0m
+Vertical Distance: 8.56014 mm
+[0m[ INFO] [1724923709.153571823]: Distance from rebar to background: 0.046369[0m
+[0m[ INFO] [1724923709.153603101]: Distance from camera to rebar: 0.230514[0m
+Vertical Distance: 8.61141 mm
+[0m[ INFO] [1724923709.491274396]: Distance from rebar to background: 0.046323[0m
+[0m[ INFO] [1724923709.491306364]: Distance from camera to rebar: 0.230489[0m
+Vertical Distance: 8.56066 mm
+[0m[ INFO] [1724923709.787821998]: Distance from rebar to background: 0.046340[0m
+[0m[ INFO] [1724923709.787854717]: Distance from camera to rebar: 0.230488[0m
+Vertical Distance: 9.55242 mm
+[0m[ INFO] [1724923710.078860207]: Distance from rebar to background: 0.046405[0m
+[0m[ INFO] [1724923710.078913081]: Distance from camera to rebar: 0.230478[0m
+Vertical Distance: 8.54357 mm
+[0m[ INFO] [1724923710.380703588]: Distance from rebar to background: 0.046357[0m
+[0m[ INFO] [1724923710.380760892]: Distance from camera to rebar: 0.230463[0m
+Vertical Distance: 9.07698 mm
+[0m[ INFO] [1724923710.688868246]: Distance from rebar to background: 0.046373[0m
+[0m[ INFO] [1724923710.688899230]: Distance from camera to rebar: 0.230456[0m
+Vertical Distance: 9.13928 mm
+[0m[ INFO] [1724923711.094651402]: Distance from rebar to background: 0.046351[0m
+[0m[ INFO] [1724923711.094683094]: Distance from camera to rebar: 0.230501[0m
+Vertical Distance: 9.07848 mm
+[0m[ INFO] [1724923711.411643642]: Distance from rebar to background: 0.046374[0m
+[0m[ INFO] [1724923711.411696028]: Distance from camera to rebar: 0.230440[0m
+Vertical Distance: 9.80084 mm
+[0m[ INFO] [1724923711.709614894]: Distance from rebar to background: 0.046315[0m
+[0m[ INFO] [1724923711.709646801]: Distance from camera to rebar: 0.230458[0m
+Vertical Distance: 9.09247 mm
+[0m[ INFO] [1724923712.037002350]: Distance from rebar to background: 0.046321[0m
+[0m[ INFO] [1724923712.037051449]: Distance from camera to rebar: 0.230492[0m
+Vertical Distance: 8.54409 mm
+[0m[ INFO] [1724923712.400172794]: Distance from rebar to background: 0.046274[0m
+[0m[ INFO] [1724923712.400226338]: Distance from camera to rebar: 0.230506[0m
+Vertical Distance: 8.61113 mm
+[0m[ INFO] [1724923712.773604522]: Distance from rebar to background: 0.046327[0m
+[0m[ INFO] [1724923712.773647398]: Distance from camera to rebar: 0.230513[0m
+Vertical Distance: 9.12596 mm
+[0m[ INFO] [1724923713.112496246]: Distance from rebar to background: 0.046303[0m
+[0m[ INFO] [1724923713.112535829]: Distance from camera to rebar: 0.230503[0m
+Vertical Distance: 8.56119 mm
+[0m[ INFO] [1724923713.471308115]: Distance from rebar to background: 0.046322[0m
+[0m[ INFO] [1724923713.471347585]: Distance from camera to rebar: 0.230430[0m
+Vertical Distance: 8.55847 mm
+[0m[ INFO] [1724923713.771202427]: Distance from rebar to background: 0.046338[0m
+[0m[ INFO] [1724923713.771257375]: Distance from camera to rebar: 0.230475[0m
+Vertical Distance: 8.69234 mm
+[0m[ INFO] [1724923714.075322643]: Distance from rebar to background: 0.046308[0m
+[0m[ INFO] [1724923714.075371472]: Distance from camera to rebar: 0.230496[0m
+Vertical Distance: 8.61076 mm
+[0m[ INFO] [1724923714.399245891]: Distance from rebar to background: 0.046379[0m
+[0m[ INFO] [1724923714.399285199]: Distance from camera to rebar: 0.230483[0m
+Vertical Distance: 8.69265 mm
+[0m[ INFO] [1724923714.739917545]: Distance from rebar to background: 0.046280[0m
+[0m[ INFO] [1724923714.739954101]: Distance from camera to rebar: 0.230526[0m
+Vertical Distance: 8.56205 mm
+[0m[ INFO] [1724923715.114009259]: Distance from rebar to background: 0.046401[0m
+[0m[ INFO] [1724923715.114065160]: Distance from camera to rebar: 0.230470[0m
+Vertical Distance: 9.09295 mm
+[0m[ INFO] [1724923715.415587832]: Distance from rebar to background: 0.046376[0m
+[0m[ INFO] [1724923715.415621156]: Distance from camera to rebar: 0.230476[0m
+Vertical Distance: 8.54351 mm
+[0m[ INFO] [1724923715.740272582]: Distance from rebar to background: 0.046399[0m
+[0m[ INFO] [1724923715.740302011]: Distance from camera to rebar: 0.230456[0m
+Vertical Distance: 8.80567 mm
+[0m[ INFO] [1724923716.103680177]: Distance from rebar to background: 0.046344[0m
+[0m[ INFO] [1724923716.103713057]: Distance from camera to rebar: 0.230481[0m
+Vertical Distance: 8.69259 mm
+[0m[ INFO] [1724923716.469198027]: Distance from rebar to background: 0.046417[0m
+[0m[ INFO] [1724923716.469234025]: Distance from camera to rebar: 0.230480[0m
+Vertical Distance: 8.54364 mm
+[0m[ INFO] [1724923716.806611481]: Distance from rebar to background: 0.046356[0m
+[0m[ INFO] [1724923716.806648564]: Distance from camera to rebar: 0.230441[0m
+Vertical Distance: 8.60871 mm
+[0m[ INFO] [1724923717.136935117]: Distance from rebar to background: 0.046411[0m
+[0m[ INFO] [1724923717.136983233]: Distance from camera to rebar: 0.230450[0m
+Vertical Distance: 8.60902 mm
+[0m[ INFO] [1724923717.456000810]: Distance from rebar to background: 0.046331[0m
+[0m[ INFO] [1724923717.456037631]: Distance from camera to rebar: 0.230521[0m
+Vertical Distance: 9.07927 mm
+[0m[ INFO] [1724923717.781415502]: Distance from rebar to background: 0.046278[0m
+[0m[ INFO] [1724923717.781448613]: Distance from camera to rebar: 0.230458[0m
+Vertical Distance: 8.5595 mm
+[0m[ INFO] [1724923718.067516731]: Distance from rebar to background: 0.046370[0m
+[0m[ INFO] [1724923718.067569618]: Distance from camera to rebar: 0.230462[0m
+Vertical Distance: 9.13952 mm
+[0m[ INFO] [1724923718.427848310]: Distance from rebar to background: 0.046368[0m
+[0m[ INFO] [1724923718.427889767]: Distance from camera to rebar: 0.230504[0m
+Vertical Distance: 8.61105 mm
+[0m[ INFO] [1724923718.762547766]: Distance from rebar to background: 0.046424[0m
+[0m[ INFO] [1724923718.762596021]: Distance from camera to rebar: 0.230473[0m
+Vertical Distance: 8.56008 mm
+Vertical Distance: 8.69061 mm
+... logging to /home/larde/.ros/log/56a3864a-65d4-11ef-972d-5bcc509848c4/roslaunch-larde-31352.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+]2;/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/src/rebarsegmenation/launch/rebarsegmenation.launch
+[1mstarted roslaunch server http://larde:46651/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: noetic
+ * /rosversion: 1.16.0
+
+NODES
+  /
+    ransac_node (rebarsegmenation/ransac_node)
+    rqt_reconfigure (rqt_reconfigure/rqt_reconfigure)
+    rviz (rviz/rviz)
+
+[1mROS_MASTER_URI=http://localhost:11311[0m
+]2;/home/larde/Documents/GitHub/Rebar-segmentation-Ransac/src/rebarsegmenation/launch/rebarsegmenation.launch http://localhost:11311
+[1mprocess[rviz-1]: started with pid [31377][0m
+[1mprocess[rqt_reconfigure-2]: started with pid [31378][0m
+[1mprocess[ransac_node-3]: started with pid [31379][0m
+[ransac_node-3] killing on exit
+[rqt_reconfigure-2] killing on exit
+[rviz-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m
