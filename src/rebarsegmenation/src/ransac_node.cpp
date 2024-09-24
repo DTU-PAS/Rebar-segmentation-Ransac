@@ -14,6 +14,7 @@
 #include <thread>
 #include <sstream>
 #include <iomanip>
+#include <chrono>
 
 // Include dynamic reconfigure
 #include <dynamic_reconfigure/server.h>
@@ -385,16 +386,39 @@ public:
 
             if (aoi.confidence >= required_confidence)
             {
-                cv::putText(rotated_image, std::to_string(aoi.id) + "H", (aoi.bounding_box.first + cv::Point(-15, -15)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 2);
+                cv::putText(rotated_image, std::to_string(aoi.id) + "H", (aoi.bounding_box.first + cv::Point(-15, -15)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 1);
                 cv::line(rotated_image, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(255, 0, 0), 2);
                 cv::rectangle(rotated_image, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(255, 255, 0), 2);
-                cv::putText(rotated_image, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(0, -5)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
+                cv::putText(rotated_image, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(0, -5)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 1);
             }
         }
 
         cv::Mat back_rotated_image = rotate_image("Vertical - reverse rotation", rotated_image, -angles.second, show_rotated_image);
 
-        putText(back_rotated_image, "Min. confidence: " + std::to_string(required_confidence), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
+        putText(back_rotated_image, "Min. confidence: " + std::to_string(required_confidence), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+
+
+        frame_count++;
+        if (frame_count == 1.0)
+        {
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> elapsed = end - start;
+            fps = 1.0 / elapsed.count(); // FPS is frames divided by time
+            start = end;                  // Reset the start time
+            frame_count = 0;              // Reset the frame counter
+        }
+
+        // Display FPS on the image using cv::putText
+        std::ostringstream fps_stream;
+        fps_stream << "FPS: " << std::fixed << std::setprecision(0) << fps;
+        std::string fps_text = fps_stream.str();
+        int font_face = cv::FONT_HERSHEY_SIMPLEX;
+        double font_scale = 0.5;
+        int thickness = 1;
+        cv::Point text_origin(10, 50); // Position of the text
+
+        // Put the FPS text on the frame
+        cv::putText(back_rotated_image, fps_text, text_origin, font_face, font_scale, cv::Scalar(0, 255, 0), thickness);
 
         cv::imshow("Projected_Image", back_rotated_image);
         cv::waitKey(1);
@@ -469,8 +493,6 @@ public:
                     std_msgs::String msg;
                     msg.data = damage;
 
-                    std::cout << damage << std::endl;
-
                     str_pub.publish(msg);
 
                     double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
@@ -503,8 +525,6 @@ public:
                     std::string damage = damage_stream.str();
                     std_msgs::String msg;
                     msg.data = damage;
-
-                    std::cout << damage << std::endl;
 
                     str_pub.publish(msg);
 
@@ -572,6 +592,10 @@ private:
     bool show_angles = false;
 
     int exit_counter = 0;
+
+    int frame_count = 0;
+    double fps = 0.0;
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
 };
 
 int main(int argc, char **argv)
