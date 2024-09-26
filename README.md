@@ -96,7 +96,14 @@ Humble
 * Clone the repository: [HTTPS](https://github.com/DTU-PAS/Rebar-segmentation-Ransac.git) or [SSH](git@github.com:DTU-PAS/Rebar-segmentation-Ransac.git)
 
 * Also ensure that the following packages are installed using **sudo apt-get install**
-  * TODO
+  * python3-colcon-common-extensions
+  * ros-$ROS_DISTRO-realsense2-camera
+  * ros-$ROS_DISTRO-realsense2-camera-msgs
+  * ros-$ROS_DISTRO-realsense2-description
+  * ros-$ROS_DISTRO-pcl-conversions
+  * ros-$ROS_DISTRO-pcl-msgs
+  * ros-$ROS_DISTRO-pcl-ros
+  * ros-$ROS_DISTRO-visualization-msgs
 
 #### Hardware
 * Camera: Connect the camera sensor using the OEM cable. 3rd party cables have shown to be unreliable at times but can work aswell.
@@ -9386,10 +9393,10 @@ The finished setup can be seen in the pictures below. Some rebars were additiona
     ```
 4. Open 2 terminal windows with the following commands
     ```sh
-    TODO
+    ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true pointcloud.enable:=true
     ```
     ```sh
-    TODO
+    ros2 run rebarsegmentation ransac_node
     ```
 
 
