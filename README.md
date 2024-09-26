@@ -96,16 +96,7 @@ Humble
 * Clone the repository: [HTTPS](https://github.com/DTU-PAS/Rebar-segmentation-Ransac.git) or [SSH](git@github.com:DTU-PAS/Rebar-segmentation-Ransac.git)
 
 * Also ensure that the following packages are installed using **sudo apt-get install**
-  * python3-catkin-pkg
-  * python3-catkin-tools
-  * python3-osrf-pycommon
-  * python3-rosdep
-  * python3-wstool
-  * ros-cmake-modules
-  * ros-$ROS_DISTRO-catkin
-  * ros-$ROS_DISTRO-realsense*
-  * ros-$ROS_DISTRO-pcl-*
-  * ros-$ROS_DISTRO-visualization-msgs
+  * TODO
 
 #### Hardware
 * Camera: Connect the camera sensor using the OEM cable. 3rd party cables have shown to be unreliable at times but can work aswell.
@@ -9382,20 +9373,24 @@ The finished setup can be seen in the pictures below. Some rebars were additiona
 ### Installation
 
 1. Clone the repo
-   ```sh
-   git clone https://github.com/DTU-PAS/Rebar-segmentation-Ransac.git
-   ```
-2. Compile the package
-   ```sh
-   catkin_make
-   ```
-3. Open 2 terminal windows with the following commands
-   ```sh
-   roslaunch realsense2_camera rs_camera.launch align_depth:=True filters:=pointcloud
-   ```
-   ```sh
-   roslaunch rebarsegmenation rebarsegmenation.launch
-   ```
+    ```sh
+    git clone https://github.com/DTU-PAS/Rebar-segmentation-Ransac.git
+    ```
+2. Switch the branch
+    ```sh
+    git switch ros2
+    ```
+3. Compile the package
+    ```sh
+    colcon build
+    ```
+4. Open 2 terminal windows with the following commands
+    ```sh
+    TODO
+    ```
+    ```sh
+    TODO
+    ```
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -9421,7 +9416,7 @@ Lars Arnold Dethlefsen - larde@dtu.dk
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-[build]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/workflows/main.yml/badge.svg
+[build]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/workflows/ros2.yml/badge.svg
 [build-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/
 [ROS]: https://img.shields.io/badge/ROS-22314E?style=for-the-badge&logo=ROS&logoColor=white
 [ROS-url]: https://wiki.ros.org/noetic
