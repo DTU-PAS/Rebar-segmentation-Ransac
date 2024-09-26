@@ -67,20 +67,20 @@ Improved method: A better way would be to create a mesh structure out of the poi
 [![build][build]][build-url] 
 
 [![ROS][ROS]][ROS-url] 
-Noetic 1.16.0
+Humble
 
 [![OPENCV][OPENCV]][OPENCV-url]
-4.2.0
+4.5.4
 
 <p align=left><img src="images/pcl.png" height="20">
-1.10.0
+1.12.1
 </p>
 
 [![UBUNTU][UBUNTU]][UBUNTU-url]
-20.04.6 LTS
+22.04.5 LTS
 
 [![C++][C++]][C++-url]
-201402L C++14
+201703L C++17
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
