@@ -10,6 +10,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include "sensor_msgs/msg/image.hpp"
+#include <opencv2/core/version.hpp>
 #include <pcl/ModelCoefficients.h>
 #include "std_msgs/msg/string.hpp"
 #include <opencv2/core/types.hpp>
@@ -18,6 +19,7 @@
 #include <opencv2/opencv.hpp>
 #include <pcl/point_types.h>
 #include "rclcpp/rclcpp.hpp"
+#include <pcl/pcl_config.h>
 #include <sstream>
 #include <iomanip>
 #include <thread>
@@ -45,25 +47,25 @@ double round(double var, int precision = 2)
 class RansacNode : public rclcpp::Node
 {
 public:
-  RansacNode() : Node("opencv_subscriber"), logger_(this->get_logger())
+  RansacNode() : Node("ransac_node"), logger_(this->get_logger())
   {
-    std::cout << "PCL Version: " << PCL_VERSION << std::endl;
-    std::cout << "OpenCV Version: " << CV_VERSION << std::endl;
+    RCLCPP_INFO(this->get_logger(), "Initializing RansacNode...");
+    RCLCPP_INFO(this->get_logger(), "PCL Version: %d", PCL_VERSION);
+    RCLCPP_INFO(this->get_logger(), "OpenCV Version: %s", CV_VERSION);
     if (__cplusplus == 202101L)
-      std::cout << "C++23";
+      RCLCPP_INFO(this->get_logger(), "C++23");
     else if (__cplusplus == 202002L)
-      std::cout << "C++20";
+      RCLCPP_INFO(this->get_logger(), "C++20");
     else if (__cplusplus == 201703L)
-      std::cout << "C++17";
+      RCLCPP_INFO(this->get_logger(), "C++17");
     else if (__cplusplus == 201402L)
-      std::cout << "C++14";
+      RCLCPP_INFO(this->get_logger(), "C++14");
     else if (__cplusplus == 201103L)
-      std::cout << "C++11";
+      RCLCPP_INFO(this->get_logger(), "C++11");
     else if (__cplusplus == 199711L)
-      std::cout << "C++98";
+      RCLCPP_INFO(this->get_logger(), "C++98");
     else
-      std::cout << "pre-standard C++." << __cplusplus;
-    std::cout << "\n";
+      RCLCPP_INFO(this->get_logger(), "pre-standard C++: %ld", __cplusplus);
 
     // Declare parameters with default values
     this->declare_parameter<double>("required_confidence", 0.7);
@@ -75,17 +77,23 @@ public:
     this->get_parameter("ransac_threshold", ransac_threshold);
     this->get_parameter("min_cluster_size", min_cluster_size);
 
-    auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 5));
+    auto qos = rclcpp::QoS(rclcpp::QoSInitialization(RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10));
     qos.reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE);
 
-    outlier_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("outlier_topic", 10);
-    inlier_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("inlier_topic", 10);
-    ball_pub = this->create_publisher<visualization_msgs::msg::Marker>("ball_topic", 10);
-    label_pub = this->create_publisher<sensor_msgs::msg::Image>("label_topic", 10);
-    str_pub = this->create_publisher<std_msgs::msg::String>("str_topic", 10);
+    outlier_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("outlier_topic", 100);
+    inlier_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("inlier_topic", 100);
+    ball_pub = this->create_publisher<visualization_msgs::msg::Marker>("ball_topic", 100);
+    label_pub = this->create_publisher<sensor_msgs::msg::Image>("label_topic", 100);
+    str_pub = this->create_publisher<std_msgs::msg::String>("str_topic", 100);
 
     pointcloud_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>("/camera/camera/depth/color/points", qos, std::bind(&RansacNode::pointcloud_callback, this, _1));
-    camera_info_sub = this->create_subscription<sensor_msgs::msg::CameraInfo>("/camera/camera/depth/camera_info", 10, std::bind(&RansacNode::camera_info_callback, this, std::placeholders::_1));
+    camera_info_sub = this->create_subscription<sensor_msgs::msg::CameraInfo>("/camera/camera/depth/camera_info", qos, std::bind(&RansacNode::camera_info_callback, this, std::placeholders::_1));
+    // camera_info_sub = this->create_subscription<sensor_msgs::msg::CameraInfo>("/camera/camera/aligned_depth_to_color/camera_info", qos, std::bind(&RansacNode::camera_info_callback, this, std::placeholders::_1));
+
+    rgb_image_sub = this->create_subscription<sensor_msgs::msg::Image>("/camera/camera/color/image_raw", qos, std::bind(&RansacNode::rgb_image_callback, this, _1));
+    depth_image_sub = this->create_subscription<sensor_msgs::msg::Image>("/camera/camera/depth/image_rect_raw", qos, std::bind(&RansacNode::depth_image_callback, this, _1));
+
+    RCLCPP_INFO(this->get_logger(), "RansacNode initialized successfully.");
   }
 
 private:
@@ -101,6 +109,8 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub;
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr rgb_image_sub;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_image_sub;
 
   // Frame history
   frame_AOI_info frames_history_vertical;
@@ -112,6 +122,7 @@ private:
   double cx;
   double cy;
   cv::Mat Km;
+  cv::Mat K_inv;
   unsigned int img_height;
   unsigned int img_width;
   std_msgs::msg::Header img_header;
@@ -128,6 +139,7 @@ private:
   cv::Mat depth_image;
   cv::Mat depth_image_rgb;
   cv::Mat main_img;
+  cv::Mat main_img_rgb;
   cv::Mat gray_orig;
   cv::Mat thinned_image;
   std::pair<cv::Mat, cv::Mat> resulting_split;
@@ -268,8 +280,57 @@ private:
     img_height = msg->height;
     img_width = msg->width;
     img_header = msg->header;
+
+    // // print camera parameters
+    // RCLCPP_INFO(this->get_logger(), "fx: %f", fx);
+    // RCLCPP_INFO(this->get_logger(), "fy: %f", fy);
+    // RCLCPP_INFO(this->get_logger(), "cx: %f", cx);
+    // RCLCPP_INFO(this->get_logger(), "cy: %f", cy);
+    // RCLCPP_INFO(this->get_logger(), "img_height: %d", img_height);
+    // RCLCPP_INFO(this->get_logger(), "img_width: %d", img_width);
+
+    // Calculate the camera matrix
+    Km = (cv::Mat_<double>(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
+
+    // Calculate the inverse of the camera matrix
+    K_inv = Km.inv();
   }
 
+  void rgb_image_callback(const sensor_msgs::msg::Image::SharedPtr msg)
+  {
+    // Convert sensor_msgs::Image to cv::Mat
+    cv_bridge::CvImagePtr cv_ptr;
+    try
+    {
+      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+    }
+    catch (cv_bridge::Exception &e)
+    {
+      RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
+      return;
+    }
+
+    rgb_image = cv_ptr->image;
+  }
+
+  void depth_image_callback(const sensor_msgs::msg::Image::SharedPtr msg)
+  {
+    // Convert sensor_msgs::Image to cv::Mat
+    cv_bridge::CvImagePtr cv_ptr;
+    try
+    {
+      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1);
+    }
+    catch (cv_bridge::Exception &e)
+    {
+      RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
+      return;
+    }
+
+    depth_image = cv_ptr->image;
+    cv::cvtColor(depth_image, depth_image_rgb, cv::COLOR_GRAY2BGR);
+  }
+  
   void project_2D(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
   {
     // Project points to image plane
@@ -306,6 +367,7 @@ private:
     cv::Mat img(img_height, img_width, CV_8UC3, image_msg->data.data());
 
     main_img = img;
+    cv::cvtColor(main_img, main_img_rgb, cv::COLOR_BGR2RGB);
 
     // Check if image is empty or not
     if (img.empty())
@@ -365,10 +427,10 @@ private:
     {
       if (aoi.confidence >= required_confidence)
       {
-        cv::putText(rotated_image, std::to_string(aoi.id) + "V", (aoi.bounding_box.first + cv::Point(-10, -10)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 2);
+        cv::putText(rotated_image, std::to_string(aoi.id) + "V", (aoi.bounding_box.first + cv::Point(-10, -10)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(180, 0, 255), 1);
         cv::line(rotated_image, aoi.closest_pixels_pair.first, aoi.closest_pixels_pair.second, cv::Scalar(0, 0, 255), 2);
         cv::rectangle(rotated_image, aoi.bounding_box.first, aoi.bounding_box.second, cv::Scalar(0, 255, 0), 2);
-        cv::putText(rotated_image, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(25, +25)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 2);
+        cv::putText(rotated_image, std::to_string(aoi.confidence), (aoi.bounding_box.first + cv::Point(25, +25)), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 1);
       }
     }
     for (const auto &aoi : frames_history_horizontal.aoiList)
@@ -412,14 +474,14 @@ private:
     cv::imshow("Projected_Image", back_rotated_image);
     cv::waitKey(1);
 
-    // publish_to_3d(frames_history_vertical);
-    // publish_to_3d(frames_history_horizontal);
+    publish_to_3d(frames_history_vertical);
+    publish_to_3d(frames_history_horizontal);
 
-    exit_counter++;
-    if (exit_counter == 50)
-    {
-      exit(0);
-    }
+    // exit_counter++;
+    // if (exit_counter == 50)
+    // {
+    //   exit(0);
+    // }
   }
 
   void verticalProcess()
@@ -445,25 +507,28 @@ private:
     {
       if (frame_history.aoiList[i].confidence >= required_confidence)
       {
-        cv::Mat K;
-
-        K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
-
         std::vector<cv::Point3f> vertical_3d_coordinates;
         std::vector<cv::Point3f> horizontal_3d_coordinates;
         if (frame_history.ns == "Vertical")
         {
-          double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y) - distance_from_rebar_to_background;
-          double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y) - distance_from_rebar_to_background;
+          double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[2].x + 20, frame_history.aoiList[i].points[2].y) - distance_from_rebar_to_background;
+          double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[3].x + 20, frame_history.aoiList[i].points[3].y) - distance_from_rebar_to_background;
 
-          cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y), 1, cv::Scalar(0, 255, 0), 2);
-          cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y), 1, cv::Scalar(0, 255, 0), 2);
+          cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[2].x + 20, frame_history.aoiList[i].points[2].y), 1, cv::Scalar(0, 255, 0), 2);
+          cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[3].x + 20, frame_history.aoiList[i].points[3].y), 1, cv::Scalar(0, 255, 0), 2);
 
-          cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y, Z1);
-          cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y, Z2);
+          // Also draw on the orignal image
+          cv::circle(main_img_rgb, cv::Point(frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y), 1, cv::Scalar(0, 255, 0), 2);
+          cv::circle(main_img_rgb, cv::Point(frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y), 1, cv::Scalar(0, 255, 0), 2);
 
-          publish_ball(point1, 0.005, 0, frame_history.ns, ball_pub, {1, 0, 0, 1});
-          publish_ball(point2, 0.005, 1, frame_history.ns, ball_pub, {1, 1, 0, 0});
+          cv::Point3f point1 = pixel_to_camera(K_inv, frame_history.aoiList[i].points[2].x + 17, frame_history.aoiList[i].points[2].y, Z1);
+          cv::Point3f point2 = pixel_to_camera(K_inv, frame_history.aoiList[i].points[3].x + 17, frame_history.aoiList[i].points[3].y, Z2);
+
+          // Print the 3D coordinates of the rebar
+          RCLCPP_INFO(this->get_logger(), "Vertical Rebar %d:\t\t (%f, %f, %f) and (%f, %f, %f)", frame_history.aoiList[i].id, point1.x, point1.y, point1.z, point2.x, point2.y, point2.z);
+
+          publish_ball(point1, 0.01, 0, frame_history.ns, ball_pub, {1, 0, 0, 1});
+          publish_ball(point2, 0.01, 1, frame_history.ns, ball_pub, {1, 1, 0, 1});
 
           std::ostringstream damage_stream;
 
@@ -478,7 +543,7 @@ private:
 
           str_pub->publish(*msg);
 
-          double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
+          // double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
         }
         else if (frame_history.ns == "Horizontal")
         {
@@ -488,11 +553,18 @@ private:
           cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y + 20), 1, cv::Scalar(255, 0, 0), 2);
           cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y + 20), 1, cv::Scalar(255, 0, 0), 2);
 
-          cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y, Z1);
-          cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y, Z2);
+          // Also draw on the orignal image
+          cv::circle(main_img_rgb, cv::Point(frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y), 1, cv::Scalar(255, 0, 0), 2);
+          cv::circle(main_img_rgb, cv::Point(frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y), 1, cv::Scalar(255, 0, 0), 2);
 
-          publish_ball(point1, 0.005, 2, frame_history.ns, ball_pub, {1, 1, 0, 1});
-          publish_ball(point2, 0.005, 3, frame_history.ns, ball_pub, {1, 0, 1, 1});
+          cv::Point3f point1 = pixel_to_camera(K_inv, frame_history.aoiList[i].points[0].x + 17, frame_history.aoiList[i].points[0].y, Z1);
+          cv::Point3f point2 = pixel_to_camera(K_inv, frame_history.aoiList[i].points[1].x + 17, frame_history.aoiList[i].points[1].y, Z2);
+
+          // Print the 3D coordinates of the rebar
+          RCLCPP_INFO(this->get_logger(), "Horizontal Rebar %d:\t (%f, %f, %f) and (%f, %f, %f)", frame_history.aoiList[i].id, point1.x, point1.y, point1.z, point2.x, point2.y, point2.z);
+
+          publish_ball(point1, 0.01, 3, frame_history.ns, ball_pub, {1, 0, 1, 1});
+          publish_ball(point2, 0.01, 4, frame_history.ns, ball_pub, {1, 0, 1, 1});
 
           std::ostringstream damage_stream;
 
@@ -507,8 +579,13 @@ private:
 
           str_pub->publish(*msg);
 
-          double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
+          // double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
         }
+        cv::imshow("Depth_Image", depth_image_rgb);
+        cv::imshow("RGB_Image", main_img_rgb);
+        cv::waitKey(1);
+        
+
       }
     }
   }

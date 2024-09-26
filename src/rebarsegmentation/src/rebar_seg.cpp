@@ -1,6 +1,5 @@
 #include <rebarsegmentation/rebar_seg.h>
 
-
 std::pair<double, double> find_rotation(cv::Mat &image)
 {
     // Detect lines using Hough Line Transform
@@ -352,12 +351,10 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
     }
 }
 
-cv::Point3f pixel_to_camera(cv::Mat K, int u, int v, float Z)
+cv::Point3f pixel_to_camera(cv::Mat K_inv, int u, int v, float Z)
 {
-    cv::Mat K_inv = K.inv();
     cv::Mat pixel_coords = (cv::Mat_<double>(3, 1) << u, v, 1);
     cv::Mat camera_coords = K_inv * pixel_coords * Z;
-
 
     return cv::Point3f(camera_coords.at<double>(0, 0), camera_coords.at<double>(1, 0), camera_coords.at<double>(2, 0));
 }
@@ -370,13 +367,13 @@ void deleteMarkers(rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr
     pub->publish(marker);
 }
 
-void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, ros::Publisher &pub, const std::vector<int> &color)
+void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr &pub, const std::vector<int> &color)
 {
     auto marker = visualization_msgs::msg::Marker();
     marker.header.frame_id = "camera_color_optical_frame";
     marker.header.stamp = rclcpp::Clock().now();
     marker.ns = ns;
-    marker.lifetime = rclcpp::Duration(1s);
+    marker.lifetime = rclcpp::Duration(std::chrono::seconds(1));
 
     marker.type = visualization_msgs::msg::Marker::SPHERE;
 
@@ -385,10 +382,10 @@ void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns,
     marker.scale.y = size;
     marker.scale.z = size;
 
-    marker.color.a = color[0] / 255.0;
-    marker.color.r = color[1] / 255.0;
-    marker.color.g = color[2] / 255.0;
-    marker.color.b = color[3] / 255.0;
+    marker.color.a = color[0];
+    marker.color.r = color[1];
+    marker.color.g = color[2];
+    marker.color.b = color[3];
 
     marker.id = ID;
     marker.pose.position.x = coord.x;

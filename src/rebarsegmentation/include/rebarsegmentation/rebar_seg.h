@@ -5,6 +5,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -110,6 +111,8 @@ cluster_info cluster(const std::string &name, const cv::Mat &img);
 void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage, double maxDistance, int padding);
 cv::Point3f pixel_to_camera(cv::Mat K, int u, int v, float Z);
 std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat &img, const cv::Mat &depth_image, const cv::Mat &labels, const cv::Mat &K_inv, double Z);
+// void deleteMarkers(rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub);
+// void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr &pub, const std::vector<int> &color);
 void deleteMarkers(rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pub);
 void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr &pub, const std::vector<int> &color);
 double find_depth(const cv::Mat &depth_image, int u, int v);
