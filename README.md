@@ -9431,7 +9431,7 @@ Lars Arnold Dethlefsen - larde@dtu.dk
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-[build]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/workflows/main.yml/badge.svg
+[build]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/workflows/ros1.yml/badge.svg
 [build-url]: https://github.com/DTU-PAS/Rebar-segmentation-Ransac/actions/
 [ROS]: https://img.shields.io/badge/ROS-22314E?style=for-the-badge&logo=ROS&logoColor=white
 [ROS-url]: https://wiki.ros.org/noetic
