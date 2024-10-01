@@ -239,6 +239,9 @@ public:
         img_height = msg->height;
         img_width = msg->width;
         img_header = msg->header;
+
+        K = (cv::Mat_<double>(3, 3) << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0);
+        K_inv = K.inv();
     }
 
     void rgb_callback(const sensor_msgs::ImageConstPtr &rgb_msg)
@@ -456,9 +459,9 @@ public:
         {
             if (frame_history.aoiList[i].confidence >= required_confidence)
             {
-                cv::Mat K;
+                // cv::Mat K;
 
-                K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
+                // K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
 
                 std::vector<cv::Point3f> vertical_3d_coordinates;
                 std::vector<cv::Point3f> horizontal_3d_coordinates;
@@ -541,7 +544,8 @@ private:
     double fy;
     double cx;
     double cy;
-    cv::Mat Km;
+    cv::Mat K;
+    cv::Mat K_inv;
     unsigned int img_height;
     unsigned int img_width;
     std_msgs::Header img_header;

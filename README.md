@@ -63,6 +63,16 @@ Current method: The distance is calculated by taking the pixel of the center of 
 
 Improved method: A better way would be to create a mesh structure out of the point cloud. 
 
+Identify the end of a rebar 
+
+Identify rust 
+
+Identify diameter of the rebars 10mm or 12mm, 16mm 
+
+Identify the depth of each rebar 
+
+Deliver centerline 
+
 ## Built With
 [![build][build]][build-url] 
 
