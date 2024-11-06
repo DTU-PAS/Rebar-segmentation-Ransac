@@ -70,38 +70,21 @@ public:
         else
             std::cout << "pre-standard C++." << __cplusplus;
         std::cout << "\n";
-        inlier_pub = nh.advertise<sensor_msgs::PointCloud2>("/inlier_points", 1);
-        outlier_pub = nh.advertise<sensor_msgs::PointCloud2>("/outlier_points", 1);
-        label_pub = nh.advertise<sensor_msgs::Image>("/label", 1);
-        ball_pub = nh.advertise<visualization_msgs::Marker>("/ball", 1);
-        str_pub = nh.advertise<std_msgs::String>("/damage_string", 1000);
+        inlier_pub = nh.advertise<sensor_msgs::PointCloud2>("/inlier_points", 10);
+        outlier_pub = nh.advertise<sensor_msgs::PointCloud2>("/outlier_points", 10);
+        label_pub = nh.advertise<sensor_msgs::Image>("/label", 10);
+        ball_pub = nh.advertise<visualization_msgs::Marker>("/ball", 10);
+        str_pub = nh.advertise<std_msgs::String>("/damage_string", 10);
+        centerline_pub_vertical = nh.advertise<sensor_msgs::PointCloud2>("/centerline_vertical", 10);
+        centerline_pub_horizontal = nh.advertise<sensor_msgs::PointCloud2>("/centerline_horizontal", 10);
 
         pointcloud_sub = nh.subscribe("/camera/depth/color/points", 1, &RansacNode::pointcloud_callback, this);
-        std::string camera_info_topic;
-        if (aligned_depth)
-        {
-            camera_info_topic = "/camera/aligned_depth_to_color/camera_info";
-            // camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
-        }
-        else
-        {
-            camera_info_topic = "/camera/depth/camera_info";
-            // camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
-        }
-        // camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
-        // camera_info_sub = nh.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &RansacNode::camera_info_callback, this);
-        camera_info_topic = "/camera/depth/camera_info";
-        ROS_INFO("Camera info topic: %s", camera_info_topic.c_str());
-        camera_info_sub = nh.subscribe(camera_info_topic, 1, &RansacNode::camera_info_callback, this);
+
+        camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
 
         rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
         depth_sub = nh.subscribe("/camera/depth/image_rect_raw", 1, &RansacNode::depth_callback, this);
 
-        // pointcloud_sub = nh.subscribe("/stereo/points2", 1, &RansacNode::pointcloud_callback, this);
-        // // camera_info_sub = nh.subscribe("/camera/depth/camera_info", 1, &RansacNode::camera_info_callback, this);
-        // camera_info_sub = nh.subscribe("/stereo/left/camera_info", 1, &RansacNode::camera_info_callback, this);
-        // rgb_sub = nh.subscribe("/stereo/left/image_rect_color", 1, &RansacNode::rgb_callback, this);
-        // depth_sub = nh.subscribe("/stereo/depth", 1, &RansacNode::depth_callback, this);
     }
 
     void dynamic_reconfigure_callback(rebarsegmenation::Ransac_node_ParamsConfig &config, uint32_t level)
@@ -267,13 +250,22 @@ public:
             cv_ptr = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1);
             depth_image = cv_ptr->image;
             cv::cvtColor(depth_image, depth_image_rgb, cv::COLOR_GRAY2BGR);
-        }
+            cv::Mat depth_image_rgb_shifted;
+            cv::Mat depth_image_shifted;
+            // Shift depth image to the right by 10 pixels
+            cv::Mat M = (cv::Mat_<double>(2, 3) << 1, 0, 18, 0, 1, 0);
+            cv::warpAffine(depth_image_rgb, depth_image_rgb_shifted, M, depth_image_rgb.size());
+            cv::warpAffine(depth_image, depth_image_shifted, M, rgb_image.size());
+            depth_image_rgb = depth_image_rgb_shifted;
+            depth_image = depth_image_shifted;
+                }
         catch (cv_bridge::Exception &e)
         {
             ROS_ERROR("cv_bridge exception: %s", e.what());
             return;
         }
     }
+
 
     void project_2D(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
     {
@@ -295,8 +287,7 @@ public:
             // Project point to image plane
             int u = static_cast<int>((fx * point.x / point.z) + cx);
             int v = static_cast<int>((fy * point.y / point.z) + cy);
-
-            // Check if the point is within the image boundaries
+         // Check if the point is within the image boundaries
             if (u >= 0 && u < image_msg->width && v >= 0 && v < image_msg->height)
             {
                 // Calculate pixel index
@@ -400,15 +391,14 @@ public:
 
         putText(back_rotated_image, "Min. confidence: " + std::to_string(required_confidence), cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
 
-
         frame_count++;
         if (frame_count == 1.0)
         {
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> elapsed = end - start;
             fps = 1.0 / elapsed.count(); // FPS is frames divided by time
-            start = end;                  // Reset the start time
-            frame_count = 0;              // Reset the frame counter
+            start = end;                 // Reset the start time
+            frame_count = 0;             // Reset the frame counter
         }
 
         // Display FPS on the image using cv::putText
@@ -423,59 +413,81 @@ public:
         // Put the FPS text on the frame
         cv::putText(back_rotated_image, fps_text, text_origin, font_face, font_scale, cv::Scalar(0, 255, 0), thickness);
 
+        cv::Mat main_img_converted;
+        if (main_img.type() != depth_image_rgb.type())
+        {
+            main_img.convertTo(main_img_converted, depth_image_rgb.type());
+        }
+        else
+        {
+            main_img_converted = main_img;
+        }
+
+        // Ensure both images have the same number of channels
+        if (main_img_converted.channels() != depth_image_rgb.channels())
+        {
+            if (main_img_converted.channels() == 1)
+            {
+                cv::cvtColor(main_img_converted, main_img_converted, cv::COLOR_GRAY2BGR);
+            }
+            if (depth_image_rgb.channels() == 1)
+            {
+                cv::cvtColor(depth_image_rgb, depth_image_rgb, cv::COLOR_GRAY2BGR);
+            }
+        }
+
         cv::imshow("Projected_Image", back_rotated_image);
         cv::waitKey(1);
 
-        publish_to_3d(frames_history_vertical);
-        publish_to_3d(frames_history_horizontal);
+        publish_AOI_to_3d(frames_history_vertical);
+        publish_AOI_to_3d(frames_history_horizontal);
 
-        exit_counter++;
-        if (exit_counter == 50)
-        {
-            exit(0);
-        }
+        publish_centerline_to_3d(frames_history_vertical);
+        publish_centerline_to_3d(frames_history_horizontal);
+
+        // exit_counter++;
+        // if (exit_counter == 50)
+        // {
+        //     exit(0);
+        // }
     }
 
     void verticalProcess()
     {
-        cv::Mat pruned_vertical = resulting_split.first;
+        cv::ximgproc::thinning(resulting_split.first, frames_history_vertical.skeleton);
+
         frames_history_vertical.ns = "Vertical";
-        detectInterruptions(frames_history_vertical, pruned_vertical, 70, 20, show_roi, show_clusters);
+        detectInterruptions(frames_history_vertical, resulting_split.first, 70, 20, show_roi, show_clusters);
         frames_history_vertical.calculateConfidence();
     }
 
     void horizontalProcess()
     {
-        cv::Mat pruned_horizontal = resulting_split.second;
+        cv::ximgproc::thinning(resulting_split.second, frames_history_horizontal.skeleton);
+
         frames_history_horizontal.ns = "Horizontal";
-        detectInterruptions(frames_history_horizontal, pruned_horizontal, 70, 10, show_roi, show_clusters);
+        detectInterruptions(frames_history_horizontal, resulting_split.second, 70, 10, show_roi, show_clusters);
         frames_history_horizontal.calculateConfidence();
     }
 
-    void publish_to_3d(frame_AOI_info frame_history)
+    void publish_AOI_to_3d(frame_AOI_info frame_history)
     {
         // deleteMarkers(ball_pub);
         for (size_t i = 0; i < frame_history.aoiList.size(); ++i)
         {
             if (frame_history.aoiList[i].confidence >= required_confidence)
             {
-                // cv::Mat K;
-
-                // K = (cv::Mat_<double>(3, 3) << 431.6277160644531, 0.0, 428.92486572265625, 0.0, 431.6277160644531, 233.90313720703125, 0.0, 0.0, 1.0);
 
                 std::vector<cv::Point3f> vertical_3d_coordinates;
                 std::vector<cv::Point3f> horizontal_3d_coordinates;
                 if (frame_history.ns == "Vertical")
                 {
-                    // for (size_t j = 0; j < frame_history.aoiList[i].points.size(); ++j)
-                    // {
-                    //     cv::circle(depth_image_rgb, frame_history.aoiList[i].points[j] - cv::Point(15, 0), 1, cv::Scalar(255, 0, 0), 3);
-                    // }
-                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y) - distance_from_rebar_to_background;
-                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y) - distance_from_rebar_to_background;
-                    
-                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y), 1, cv::Scalar(0, 255, 0), 2);
-                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y), 1, cv::Scalar(0, 255, 0), 2);
+                
+                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[2].x + 20, frame_history.aoiList[i].points[2].y) - distance_from_rebar_to_background;
+                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[3].x - 20, frame_history.aoiList[i].points[3].y) - distance_from_rebar_to_background;
+
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[2].x +20, frame_history.aoiList[i].points[2].y), 1, cv::Scalar(0, 255, 0), 2);
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[3].x -20, frame_history.aoiList[i].points[3].y), 1, cv::Scalar(0, 255, 0), 2);
 
                     cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y, Z1);
                     cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y, Z2);
@@ -501,7 +513,8 @@ public:
                     double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
                 }
                 else if (frame_history.ns == "Horizontal")
-                {   
+                {
+
                     double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y + 20) - distance_from_rebar_to_background;
                     double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y + 20) - distance_from_rebar_to_background;
 
@@ -513,7 +526,6 @@ public:
 
                     publish_ball(point1, 0.005, 2, frame_history.ns, ball_pub, {1, 1, 0, 1});
                     publish_ball(point2, 0.005, 3, frame_history.ns, ball_pub, {1, 0, 1, 1});
-
 
                     // Create an ostringstream for building the string with rounded values
                     std::ostringstream damage_stream;
@@ -535,7 +547,92 @@ public:
 
                     double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
                 }
+            // cv::imshow("Depth Image", depth_image_rgb);
+            // cv::waitKey(1);
             }
+        }
+    }
+
+    void publish_centerline_to_3d(frame_AOI_info frame_history)
+    {
+        // cv::imshow("Skeleton", frame_history.skeleton);
+        // cv::waitKey(1);
+    
+        // Overlay skeleton on depth image
+        cv::Mat overlay;
+        cv::Mat skeleton_rgb;
+        cv::Mat depth_image_rgb_converted;
+        cv::cvtColor(frame_history.skeleton, skeleton_rgb, cv::COLOR_GRAY2BGR);
+        depth_image_rgb.convertTo(depth_image_rgb_converted, skeleton_rgb.type());
+        cv::addWeighted(depth_image_rgb_converted, 0.5, skeleton_rgb, 0.5, 0, overlay);
+    
+        // cv::imshow("Overlay", overlay);
+        // cv::waitKey(1);
+    
+        int count = 0;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr centerline_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointXYZ pcl_point;
+        // lopp through all white pixels in the skeleton image and publish them as balls
+    
+        if (frame_history.ns == "Vertical")
+        {
+            for (int i = 0; i < frame_history.skeleton.rows; ++i)
+            {
+                for (int j = 0; j < frame_history.skeleton.cols; ++j)
+                {
+                    if (frame_history.skeleton.at<uchar>(i, j) == 255)
+                    {
+                        double Z = find_depth(depth_image, j, i);
+                        cv::Point3f point = pixel_to_camera(K, j, i, Z);
+                        // create a new pointcloud with the centerline points
+                        pcl_point.x = point.x;
+                        pcl_point.y = point.y;
+                        pcl_point.z = point.z;
+                        centerline_cloud->points.push_back(pcl_point);
+                        centerline_cloud->height = 1;
+                        centerline_cloud->width = centerline_cloud->points.size();
+                        centerline_cloud->is_dense = true;
+    
+                        // count++;
+                    }
+                }
+            }
+            // publish the pointcloud
+            sensor_msgs::PointCloud2 centerline_msg;
+            pcl::toROSMsg(*centerline_cloud, centerline_msg);
+            centerline_msg.header.frame_id = "camera_color_optical_frame";
+            centerline_msg.header.stamp = ros::Time::now();
+            centerline_pub_vertical.publish(centerline_msg);
+        }
+        else if (frame_history.ns == "Horizontal")
+        {
+            for (int i = 0; i < frame_history.skeleton.rows; ++i)
+            {
+                for (int j = 0; j < frame_history.skeleton.cols; ++j)
+                {
+                    if (frame_history.skeleton.at<uchar>(i, j) == 255)
+                    {
+                        double Z = find_depth(depth_image, j, i);
+                        cv::Point3f point = pixel_to_camera(K, j, i, Z);
+                        // create a new pointcloud with the centerline points
+                        pcl_point.x = point.x;
+                        pcl_point.y = point.y;
+                        pcl_point.z = point.z;
+                        centerline_cloud->points.push_back(pcl_point);
+                        centerline_cloud->height = 1;
+                        centerline_cloud->width = centerline_cloud->points.size();
+                        centerline_cloud->is_dense = true;
+    
+                        // count++;
+                    }
+                }
+            }
+            // publish the pointcloud
+            sensor_msgs::PointCloud2 centerline_msg;
+            pcl::toROSMsg(*centerline_cloud, centerline_msg);
+            centerline_msg.header.frame_id = "camera_color_optical_frame";
+            centerline_msg.header.stamp = ros::Time::now();
+            centerline_pub_horizontal.publish(centerline_msg);
         }
     }
 
@@ -546,6 +643,7 @@ private:
     double cy;
     cv::Mat K;
     cv::Mat K_inv;
+
     unsigned int img_height;
     unsigned int img_width;
     std_msgs::Header img_header;
@@ -558,6 +656,8 @@ private:
     ros::Publisher label_pub;
     ros::Publisher ball_pub;
     ros::Publisher str_pub;
+    ros::Publisher centerline_pub_vertical;
+    ros::Publisher centerline_pub_horizontal;
 
     // Subscribers
     ros::Subscriber pointcloud_sub;
@@ -620,8 +720,6 @@ int main(int argc, char **argv)
     RansacNode rn;
     // callback_object = &rn;
 
-    // If topic aligned_depth_to_color/camera_info is available, use it set flag aligned_depth to true
-
     dynamic_reconfigure::Server<rebarsegmenation::Ransac_node_ParamsConfig> server;
     dynamic_reconfigure::Server<rebarsegmenation::Ransac_node_ParamsConfig>::CallbackType f;
 
@@ -629,7 +727,6 @@ int main(int argc, char **argv)
     server.setCallback(f);
 
     ros::spin();
-
 
     return 0;
 }

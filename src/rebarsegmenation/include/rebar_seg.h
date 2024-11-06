@@ -35,6 +35,8 @@ struct Cluster
     int topEdge;
     int bottomEdge;
     cv::Point centroid;
+    cv::Point2f center;
+    std::vector<cv::Point2f> midpoints;
 };
 
 struct AOI
@@ -65,6 +67,7 @@ struct frame_AOI_info
     std::vector<AOI> aoiList;
     std::vector<int> nr_of_new_AOIs;
     std::string ns;
+    cv::Mat skeleton;
 
     // Method to add an AOI to the list
     void addAOI(const AOI &aoi)

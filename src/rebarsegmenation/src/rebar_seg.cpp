@@ -84,11 +84,9 @@ cv::Point rotate_point(const std::string &name, const cv::Point point, cv::Point
     // Get the rotation matrix
     cv::Mat M = cv::getRotationMatrix2D(center, angle, 1);
 
-    // Rotate the point 
+    // Rotate the point
     double x = point.x * M.at<double>(0, 0) + point.y * M.at<double>(0, 1) + M.at<double>(0, 2);
     double y = point.x * M.at<double>(1, 0) + point.y * M.at<double>(1, 1) + M.at<double>(1, 2);
-
-    
 
     if (debug_level)
     {
@@ -114,9 +112,9 @@ std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, 
 
     if (debug_level)
     {
-    cv::imshow("Detected Horizontal Lines", horizontalLines);
-    cv::imshow("Detected Vertical Lines", verticalLines);
-    cv::waitKey(1);
+        cv::imshow("Detected Horizontal Lines", horizontalLines);
+        cv::imshow("Detected Vertical Lines", verticalLines);
+        cv::waitKey(1);
     }
 
     return std::make_pair(verticalLines, horizontalLines);
@@ -304,164 +302,128 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
 
     if (nLabels > 2)
     {
-        // Mark the clusters on the image
-        cv::Mat outputImage;
-        if (!show_clusters)
-        {
-            cv::cvtColor(lineImage, outputImage, cv::COLOR_GRAY2BGR);
-        }
-        else
-        {
-            outputImage = clustered_image;
-            debug_level = 1;
-        }
 
         std::vector<Cluster> clusters;
 
+        // Calculate the oriented bounding box of each cluster
+        int width = labels_damaged.cols;
+        int height = labels_damaged.rows;
+
         for (int i = 1; i < nLabels; ++i)
         {
-            int x = stats.at<int>(i, cv::CC_STAT_LEFT);
-            int y = stats.at<int>(i, cv::CC_STAT_TOP);
-            int width = stats.at<int>(i, cv::CC_STAT_WIDTH);
-            int height = stats.at<int>(i, cv::CC_STAT_HEIGHT);
-
-            Cluster cluster = {x, x + width, y, y + height, cv::Point(x + width / 2, y + height / 2)};
-            clusters.push_back(cluster);
-        }
-
-        // Function to calculate the horizontal or vertical distance between edges
-        auto distance = [&](const Cluster &a, const Cluster &b) -> double
-        {
-            if (frame_history.ns == "Horizontal")
+            std::vector<cv::Point> points;
+            for (int y = 0; y < height; ++y)
             {
-                return std::abs(a.rightEdge - b.leftEdge);
-            }
-            else if (frame_history.ns == "Vertical")
-            {
-                return std::abs(a.bottomEdge - b.topEdge);
-            }
-            return std::numeric_limits<double>::max();
-        };
-
-        // for(int i = 0; i < clusters.size(); ++i)
-        // {
-        //     // Show the edges of each cluster with a circle
-        //     cv::circle(outputImage, cv::Point(clusters[i].leftEdge, clusters[i].topEdge), 5, cv::Scalar(0, 255, 0), 2);
-        //     cv::circle(outputImage, cv::Point(clusters[i].rightEdge, clusters[i].bottomEdge), 5, cv::Scalar(0, 0, 255), 2);
-        // }
-
-        std::vector<bool> pairedLeft(clusters.size(), false);
-        std::vector<bool> pairedRight(clusters.size(), false);
-
-        // Pair clusters based on their proximity and draw lines between closest pairs
-        while (std::count(pairedLeft.begin(), pairedLeft.end(), false) > 1 || std::count(pairedRight.begin(), pairedRight.end(), false) > 1)
-        {
-            double minDistance = std::numeric_limits<double>::max();
-            int minIndex1 = -1;
-            int minIndex2 = -1;
-            bool isLeftEdge = false;
-
-            for (int i = 0; i < clusters.size(); ++i)
-            {
-                if (pairedRight[i])
-                    continue;
-                for (int j = 0; j < clusters.size(); ++j)
+                for (int x = 0; x < width; ++x)
                 {
-                    if (i == j || pairedLeft[j])
-                        continue;
-                    double dist = distance(clusters[i], clusters[j]);
-                    if (dist < minDistance && dist <= maxDistance)
+                    if (labels_damaged.at<int>(y, x) == i)
                     {
-                        minDistance = dist;
-                        minIndex1 = i;
-                        minIndex2 = j;
-                        isLeftEdge = true;
+                        points.push_back(cv::Point(x, y));
                     }
                 }
             }
 
-            cv::Point pt1 = cv::Point(clusters[minIndex1].rightEdge, (clusters[minIndex1].topEdge + clusters[minIndex1].bottomEdge) / 2);
-            cv::Point pt2 = cv::Point(clusters[minIndex2].leftEdge, (clusters[minIndex2].topEdge + clusters[minIndex2].bottomEdge) / 2);
-            cv::Point pt3 = cv::Point((clusters[minIndex1].leftEdge + clusters[minIndex1].rightEdge) / 2, clusters[minIndex1].bottomEdge);
-            cv::Point pt4 = cv::Point((clusters[minIndex2].leftEdge + clusters[minIndex2].rightEdge) / 2, clusters[minIndex2].topEdge);
-        
-            std::vector<cv::Point> points = {pt1, pt2, pt3, pt4};
-
-            // Draw circles at the edges of the clusters
-            cv::circle(outputImage, pt1, 5, cv::Scalar(255, 0, 0), 2);
-            cv::circle(outputImage, pt2, 5, cv::Scalar(0, 255, 0), 2);
-            cv::circle(outputImage, pt3, 5, cv::Scalar(0, 0, 255), 2);
-            cv::circle(outputImage, pt4, 5, cv::Scalar(255, 0, 255), 2);
-
-
-
-            int highestId = 0;
-            for (auto &aoi : frame_history.aoiList)
+            if (points.size() > 0)
             {
-                if (aoi.id > highestId)
+                cv::RotatedRect rotatedRect = cv::minAreaRect(points);
+                cv::Point2f vertices[4];
+                rotatedRect.points(vertices);
+
+                Cluster cluster;
+                cluster.center = rotatedRect.center;
+                cluster.centroid = cv::Point((vertices[0].x + vertices[2].x) / 2, (vertices[0].y + vertices[2].y) / 2);
+
+                // Calculate the midpoints of each line segment
+                std::vector<cv::Point2f> midpoints(4);
+                for (int j = 0; j < 4; ++j)
                 {
-                    highestId = aoi.id;
+                    midpoints[j] = cv::Point2f((vertices[j].x + vertices[(j + 1) % 4].x) / 2,
+                                               (vertices[j].y + vertices[(j + 1) % 4].y) / 2);
                 }
-            }
 
-            if (minIndex1 != -1 && minIndex2 != -1)
-            {
-                if (frame_history.ns == "Horizontal")
+                // Store the midpoints in the cluster if needed
+                cluster.midpoints = midpoints;
+
+                clusters.push_back(cluster);
+
+                // Visualize the oriented bounding box
+                for (int j = 0; j < 4; ++j)
                 {
-                    // The are most likely two rebars in the picture.
-                    // Without this if statement the program would draw a line between the two rebars
-                    if (!(euclideanDistance(pt1, pt2) > 100))
-                    {
-                        int x1 = clamp(pt1.x - paddding, 0, WIDTH - 1);
-                        int y1 = clamp(pt1.y - paddding, 0, HEIGHT - 1);
-                        int x2 = clamp(pt2.x + paddding, 0, WIDTH - 1);
-                        int y2 = clamp(pt2.y + paddding, 0, HEIGHT - 1);
-
-                        cv::line(outputImage, pt1, pt2, cv::Scalar(0, 0, 255), 2);
-                        cv::rectangle(outputImage, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 255, 255), 2);
-
-                        AOI current_aoi;
-                        current_aoi.closest_pixels_pair = std::make_pair(pt1, pt2);
-                        current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
-                        computeAOI(frame_history, current_aoi, points, highestId);
-                    }
+                    cv::line(clustered_image, vertices[j], vertices[(j + 1) % 4], cv::Scalar(255, 255, 255), 2);
                 }
-                else if (frame_history.ns == "Vertical")
+
+                // Visualize the midpoints
+                for (const auto &midpoint : midpoints)
                 {
-                    if (!(euclideanDistance(pt3, pt4) > 100))
-                    {
-
-                        int x1 = clamp(pt3.x - paddding, 0, WIDTH - 1);
-                        int y1 = clamp(pt3.y - paddding, 0, HEIGHT - 1);
-                        int x2 = clamp(pt4.x + paddding, 0, WIDTH - 1);
-                        int y2 = clamp(pt4.y + paddding, 0, HEIGHT - 1);
-
-                        cv::line(outputImage, pt3, pt4, cv::Scalar(0, 0, 255), 2);
-                        cv::rectangle(outputImage, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(255, 0, 255), 2);
-
-                        AOI current_aoi;
-                        current_aoi.closest_pixels_pair = std::make_pair(pt3, pt4);
-                        current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
-                        computeAOI(frame_history, current_aoi, points, highestId);
-                    }
+                    cv::circle(clustered_image, midpoint, 3, cv::Scalar(0, 0, 255), -1);
                 }
-                pairedRight[minIndex1] = true;
-                pairedLeft[minIndex2] = true;
-            }
-            else
-            {
-                break;
             }
         }
 
-        if (debug_level)
+        // Find the edges of the clusters that are closest to each other stop using the centroid and use the midpoints instead
+        for (int i = 0; i < clusters.size(); ++i)
         {
-            cv::imshow(frame_history.ns + " Lines with Interruptions", outputImage);
-            cv::waitKey(1);
+            for (int j = i + 1; j < clusters.size(); ++j)
+            {
+                double minDistance = std::numeric_limits<double>::max();
+                cv::Point2f closestPoint1, closestPoint2;
+                for (const auto &point1 : clusters[i].midpoints)
+                {
+                    for (const auto &point2 : clusters[j].midpoints)
+                    {
+                        double distance = euclideanDistance(point1, point2);
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            closestPoint1 = point1;
+                            closestPoint2 = point2;
+                        }
+                    }
+                }
+
+                if (minDistance < maxDistance)
+                {
+                    clusterPairs.push_back(std::make_pair(i, j));
+                    closestPixels.push_back(std::make_pair(cv::Point(closestPoint1.x, closestPoint1.y), cv::Point(closestPoint2.x, closestPoint2.y)));
+                    
+                }
+            }
         }
-    }
-    else
-    {
+
+        // Visualize the closest points
+        for (const auto &pair : closestPixels)
+        {
+            cv::line(clustered_image, pair.first, pair.second, cv::Scalar(0, 0, 255), 2);
+        }
+
+        int highestId = 0;
+        for (auto &aoi : frame_history.aoiList)
+        {
+            if (aoi.id > highestId)
+            {
+                highestId = aoi.id;
+            }
+        }
+
+        AOI current_aoi;
+        // Loop through the closest pixels and create an AOI for each pair 
+        for (int i = 0; i < closestPixels.size(); ++i)
+        {
+            cv::Point pt1 = closestPixels[i].first;
+            cv::Point pt2 = closestPixels[i].second;
+
+            int x1 = clamp(pt1.x - paddding, 0, WIDTH - 1);
+            int y1 = clamp(pt1.y - paddding, 0, HEIGHT - 1);
+            int x2 = clamp(pt2.x + paddding, 0, WIDTH - 1);
+            int y2 = clamp(pt2.y + paddding, 0, HEIGHT - 1);
+
+            cv::rectangle(clustered_image, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 255, 255), 2);
+
+            current_aoi.closest_pixels_pair = std::make_pair(pt1, pt2);
+            current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
+            std::vector<cv::Point> points = {pt1, pt2};
+            computeAOI(frame_history, current_aoi, points, highestId);
+        }
     }
 }
 
@@ -470,7 +432,6 @@ cv::Point3f pixel_to_camera(cv::Mat K, int u, int v, float Z)
     cv::Mat K_inv = K.inv();
     cv::Mat pixel_coords = (cv::Mat_<double>(3, 1) << u, v, 1);
     cv::Mat camera_coords = K_inv * pixel_coords * Z;
-
 
     return cv::Point3f(camera_coords.at<double>(0, 0), camera_coords.at<double>(1, 0), camera_coords.at<double>(2, 0));
 }
