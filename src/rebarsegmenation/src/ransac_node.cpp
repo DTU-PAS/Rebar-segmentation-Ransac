@@ -471,17 +471,17 @@ public:
     void publish_AOI_to_3d(frame_AOI_info frame_history)
     {
         // deleteMarkers(ball_pub);
-        // for (int j = 0; j < frame_history.clusters.size(); ++j)
-        // {
+        for (int k = 0; k < frame_history.clusters.size(); ++k)
+        {
             std::vector<PointPair> pairs;
 
             // Calculate distances between all pairs of points
-            for (size_t i = 0; i < frame_history.clusters[0].midpoints.size(); ++i)
+            for (size_t i = 0; i < frame_history.clusters[k].midpoints.size(); ++i)
             {
-                for (size_t j = i + 1; j < frame_history.clusters[0].midpoints.size(); ++j)
+                for (size_t j = i + 1; j < frame_history.clusters[k].midpoints.size(); ++j)
                 {
-                    double dist = euclideanDistance(frame_history.clusters[0].midpoints[i], frame_history.clusters[0].midpoints[j]);
-                    pairs.push_back(PointPair(frame_history.clusters[0].midpoints[i], frame_history.clusters[0].midpoints[j], dist));
+                    double dist = euclideanDistance(frame_history.clusters[k].midpoints[i], frame_history.clusters[k].midpoints[j]);
+                    pairs.push_back(PointPair(frame_history.clusters[k].midpoints[i], frame_history.clusters[k].midpoints[j], dist));
                 }
             }
             // Sort the pairs by distance
@@ -490,14 +490,9 @@ public:
             // The closest pair is the first in the sorted list
             const PointPair &closestPair = pairs.front();
 
-            
             // Calculate closes point pair into 3d
-            if (frame_history.ns == "Vertical"){
-                cv::circle(depth_image_rgb, cv::Point(closestPair.p1.x - 20, closestPair.p1.y), 1, cv::Scalar(0, 0, 255), 2);
-                cv::circle(depth_image_rgb, cv::Point(closestPair.p2.x + 20, closestPair.p2.y), 1, cv::Scalar(0, 0, 255), 2);
-
-                cv::imshow("Depth image", depth_image_rgb);
-                cv::waitKey(1);
+            if (frame_history.ns == "Vertical")
+            {
                 double Z1 = find_depth(depth_image, closestPair.p1.x - 20, closestPair.p1.y) - distance_from_rebar_to_background;
                 double Z2 = find_depth(depth_image, closestPair.p2.x + 20, closestPair.p2.y) - distance_from_rebar_to_background;
 
@@ -507,12 +502,8 @@ public:
                 double dist = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
                 std::cout << "Diameter: " << dist << std::endl;
             }
-            else if (frame_history.ns == "Horizontal"){
-                cv::circle(depth_image_rgb, cv::Point(closestPair.p1.x, closestPair.p1.y - 20), 1, cv::Scalar(0, 255, 0), 2);
-                cv::circle(depth_image_rgb, cv::Point(closestPair.p2.x, closestPair.p2.y + 20), 1, cv::Scalar(0, 255, 0), 2);
-
-                cv::imshow("Depth image", depth_image_rgb);
-                cv::waitKey(1);
+            else if (frame_history.ns == "Horizontal")
+            {
                 double Z1 = find_depth(depth_image, closestPair.p1.x, closestPair.p1.y - 20) - distance_from_rebar_to_background;
                 double Z2 = find_depth(depth_image, closestPair.p2.x, closestPair.p2.y + 20) - distance_from_rebar_to_background;
 
@@ -522,7 +513,7 @@ public:
                 double dist = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
                 std::cout << "Diameter: " << dist << std::endl;
             }
-        // }
+        }
         for (size_t i = 0; i < frame_history.aoiList.size(); ++i)
         {
 
