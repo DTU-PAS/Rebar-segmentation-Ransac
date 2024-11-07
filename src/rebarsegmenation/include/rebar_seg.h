@@ -30,10 +30,6 @@ struct cluster_info
 
 struct Cluster
 {
-    int leftEdge;
-    int rightEdge;
-    int topEdge;
-    int bottomEdge;
     cv::Point centroid;
     cv::Point2f center;
     std::vector<cv::Point2f> midpoints;
@@ -46,7 +42,8 @@ struct AOI
     float confidence;                                    // Confidence of the AOI
     std::pair<cv::Point, cv::Point> closest_pixels_pair; // Closest pixels to the AOI
     std::pair<cv::Point, cv::Point> bounding_box;        // Bounding box defined by top-left and bottom-right points
-    std::vector<cv::Point> points;                       // Pixels within the AOI
+    // std::vector<cv::Point2f> points;                       // Pixels within the AOI
+    
     int area() const
     {
         int width = bounding_box.second.x - bounding_box.first.x;
@@ -68,6 +65,7 @@ struct frame_AOI_info
     std::vector<int> nr_of_new_AOIs;
     std::string ns;
     cv::Mat skeleton;
+    std::vector<Cluster> clusters;
 
     // Method to add an AOI to the list
     void addAOI(const AOI &aoi)
@@ -92,6 +90,21 @@ struct frame_AOI_info
     }
 };
 
+struct PointPair
+{
+    cv::Point2f p1, p2;
+    double distance;
+
+    PointPair(const cv::Point2f &point1, const cv::Point2f &point2, double dist)
+        : p1(point1), p2(point2), distance(dist) {}
+
+    // Sort pairs by distance (ascending order)
+    bool operator<(const PointPair &other) const
+    {
+        return distance < other.distance;
+    }
+};
+
 // struct Colors
 // {
 //     const float RED[4] = {1, 1, 0, 0};
@@ -111,6 +124,7 @@ cv::Point rotate_point(const std::string &name, const cv::Point point, cv::Point
 // std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, int left_right_num, bool debug_level);
 std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, std::pair<double, double> angles, int kernelsize, bool debug_level);
 cluster_info cluster(const std::string &name, const cv::Mat &img, bool debug_level);
+double euclideanDistance(cv::Point2d pt1, cv::Point2d pt2);
 void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage, double maxDistance, int padding, bool debug_level, bool show_clusters);
 cv::Point3f pixel_to_camera(cv::Mat K, int u, int v, float Z);
 std::vector<std::vector<cv::Point3f>> get_3d_coordinates(const cv::Mat &img, const cv::Mat &depth_image, const cv::Mat &labels, const cv::Mat &K_inv, double Z);

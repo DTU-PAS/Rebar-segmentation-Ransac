@@ -228,7 +228,7 @@ float computeIoU(const AOI &a, const AOI &b)
     return static_cast<float>(intersectionArea) / unionArea;
 }
 
-void computeAOI(frame_AOI_info &frame_history, AOI current_aoi, std::vector<cv::Point> points, int highestId = 0)
+void computeAOI(frame_AOI_info &frame_history, AOI current_aoi/*, std::vector<cv::Point> points*/, int highestId = 0)
 {
     bool matched = false;
     if (frame_history.aoiList.size() <= 0)
@@ -248,7 +248,7 @@ void computeAOI(frame_AOI_info &frame_history, AOI current_aoi, std::vector<cv::
                 aoi.closest_pixels_pair = current_aoi.closest_pixels_pair;
                 aoi.bounding_box = current_aoi.bounding_box;
                 aoi.matchCount += 2;
-                aoi.points = points;
+                // aoi.points = points;
                 if (aoi.matchCount > HISTORY)
                 {
                     aoi.matchCount = HISTORY;
@@ -345,18 +345,19 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
                 cluster.midpoints = midpoints;
 
                 clusters.push_back(cluster);
+                frame_history.clusters = clusters;
 
                 // Visualize the oriented bounding box
-                for (int j = 0; j < 4; ++j)
-                {
-                    cv::line(clustered_image, vertices[j], vertices[(j + 1) % 4], cv::Scalar(255, 255, 255), 2);
-                }
+                // for (int j = 0; j < 4; ++j)
+                // {
+                //     cv::line(clustered_image, vertices[j], vertices[(j + 1) % 4], cv::Scalar(255, 255, 255), 2);
+                // }
 
-                // Visualize the midpoints
-                for (const auto &midpoint : midpoints)
-                {
-                    cv::circle(clustered_image, midpoint, 3, cv::Scalar(0, 0, 255), -1);
-                }
+                // // Visualize the midpoints
+                // for (const auto &midpoint : midpoints)
+                // {
+                //     cv::circle(clustered_image, midpoint, 3, cv::Scalar(0, 0, 255), -1);
+                // }
             }
         }
 
@@ -385,16 +386,15 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
                 {
                     clusterPairs.push_back(std::make_pair(i, j));
                     closestPixels.push_back(std::make_pair(cv::Point(closestPoint1.x, closestPoint1.y), cv::Point(closestPoint2.x, closestPoint2.y)));
-                    
                 }
             }
         }
 
         // Visualize the closest points
-        for (const auto &pair : closestPixels)
-        {
-            cv::line(clustered_image, pair.first, pair.second, cv::Scalar(0, 0, 255), 2);
-        }
+        // for (const auto &pair : closestPixels)
+        // {
+        //     cv::line(clustered_image, pair.first, pair.second, cv::Scalar(0, 0, 255), 2);
+        // }
 
         int highestId = 0;
         for (auto &aoi : frame_history.aoiList)
@@ -406,7 +406,7 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
         }
 
         AOI current_aoi;
-        // Loop through the closest pixels and create an AOI for each pair 
+        // Loop through the closest pixels and create an AOI for each pair
         for (int i = 0; i < closestPixels.size(); ++i)
         {
             cv::Point pt1 = closestPixels[i].first;
@@ -421,8 +421,8 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
 
             current_aoi.closest_pixels_pair = std::make_pair(pt1, pt2);
             current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
-            std::vector<cv::Point> points = {pt1, pt2};
-            computeAOI(frame_history, current_aoi, points, highestId);
+            // std::vector<cv::Point2f> points = clusters[clusterPairs[i].first].midpoints;
+            computeAOI(frame_history, current_aoi/*, points*/, highestId);
         }
     }
 }

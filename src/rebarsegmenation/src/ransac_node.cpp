@@ -84,7 +84,6 @@ public:
 
         rgb_sub = nh.subscribe("/camera/color/image_raw", 1, &RansacNode::rgb_callback, this);
         depth_sub = nh.subscribe("/camera/depth/image_rect_raw", 1, &RansacNode::depth_callback, this);
-
     }
 
     void dynamic_reconfigure_callback(rebarsegmenation::Ransac_node_ParamsConfig &config, uint32_t level)
@@ -258,14 +257,13 @@ public:
             cv::warpAffine(depth_image, depth_image_shifted, M, rgb_image.size());
             depth_image_rgb = depth_image_rgb_shifted;
             depth_image = depth_image_shifted;
-                }
+        }
         catch (cv_bridge::Exception &e)
         {
             ROS_ERROR("cv_bridge exception: %s", e.what());
             return;
         }
     }
-
 
     void project_2D(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
     {
@@ -287,7 +285,7 @@ public:
             // Project point to image plane
             int u = static_cast<int>((fx * point.x / point.z) + cx);
             int v = static_cast<int>((fy * point.y / point.z) + cy);
-         // Check if the point is within the image boundaries
+            // Check if the point is within the image boundaries
             if (u >= 0 && u < image_msg->width && v >= 0 && v < image_msg->height)
             {
                 // Calculate pixel index
@@ -473,8 +471,61 @@ public:
     void publish_AOI_to_3d(frame_AOI_info frame_history)
     {
         // deleteMarkers(ball_pub);
+        // for (int j = 0; j < frame_history.clusters.size(); ++j)
+        // {
+            std::vector<PointPair> pairs;
+
+            // Calculate distances between all pairs of points
+            for (size_t i = 0; i < frame_history.clusters[0].midpoints.size(); ++i)
+            {
+                for (size_t j = i + 1; j < frame_history.clusters[0].midpoints.size(); ++j)
+                {
+                    double dist = euclideanDistance(frame_history.clusters[0].midpoints[i], frame_history.clusters[0].midpoints[j]);
+                    pairs.push_back(PointPair(frame_history.clusters[0].midpoints[i], frame_history.clusters[0].midpoints[j], dist));
+                }
+            }
+            // Sort the pairs by distance
+            std::sort(pairs.begin(), pairs.end());
+
+            // The closest pair is the first in the sorted list
+            const PointPair &closestPair = pairs.front();
+
+            
+            // Calculate closes point pair into 3d
+            if (frame_history.ns == "Vertical"){
+                cv::circle(depth_image_rgb, cv::Point(closestPair.p1.x - 20, closestPair.p1.y), 1, cv::Scalar(0, 0, 255), 2);
+                cv::circle(depth_image_rgb, cv::Point(closestPair.p2.x + 20, closestPair.p2.y), 1, cv::Scalar(0, 0, 255), 2);
+
+                cv::imshow("Depth image", depth_image_rgb);
+                cv::waitKey(1);
+                double Z1 = find_depth(depth_image, closestPair.p1.x - 20, closestPair.p1.y) - distance_from_rebar_to_background;
+                double Z2 = find_depth(depth_image, closestPair.p2.x + 20, closestPair.p2.y) - distance_from_rebar_to_background;
+
+                cv::Point3f point1 = pixel_to_camera(K, closestPair.p1.x, closestPair.p1.y, Z1);
+                cv::Point3f point2 = pixel_to_camera(K, closestPair.p2.x, closestPair.p2.y, Z2);
+
+                double dist = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
+                std::cout << "Diameter: " << dist << std::endl;
+            }
+            else if (frame_history.ns == "Horizontal"){
+                cv::circle(depth_image_rgb, cv::Point(closestPair.p1.x, closestPair.p1.y - 20), 1, cv::Scalar(0, 255, 0), 2);
+                cv::circle(depth_image_rgb, cv::Point(closestPair.p2.x, closestPair.p2.y + 20), 1, cv::Scalar(0, 255, 0), 2);
+
+                cv::imshow("Depth image", depth_image_rgb);
+                cv::waitKey(1);
+                double Z1 = find_depth(depth_image, closestPair.p1.x, closestPair.p1.y - 20) - distance_from_rebar_to_background;
+                double Z2 = find_depth(depth_image, closestPair.p2.x, closestPair.p2.y + 20) - distance_from_rebar_to_background;
+
+                cv::Point3f point1 = pixel_to_camera(K, closestPair.p1.x, closestPair.p1.y, Z1);
+                cv::Point3f point2 = pixel_to_camera(K, closestPair.p2.x, closestPair.p2.y, Z2);
+
+                double dist = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
+                std::cout << "Diameter: " << dist << std::endl;
+            }
+        // }
         for (size_t i = 0; i < frame_history.aoiList.size(); ++i)
         {
+
             if (frame_history.aoiList[i].confidence >= required_confidence)
             {
 
@@ -482,15 +533,15 @@ public:
                 std::vector<cv::Point3f> horizontal_3d_coordinates;
                 if (frame_history.ns == "Vertical")
                 {
-                
-                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[2].x + 20, frame_history.aoiList[i].points[2].y) - distance_from_rebar_to_background;
-                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[3].x - 20, frame_history.aoiList[i].points[3].y) - distance_from_rebar_to_background;
 
-                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[2].x +20, frame_history.aoiList[i].points[2].y), 1, cv::Scalar(0, 255, 0), 2);
-                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[3].x -20, frame_history.aoiList[i].points[3].y), 1, cv::Scalar(0, 255, 0), 2);
+                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].closest_pixels_pair.first.x + 20, frame_history.aoiList[i].closest_pixels_pair.first.y) - distance_from_rebar_to_background;
+                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].closest_pixels_pair.second.x - 20, frame_history.aoiList[i].closest_pixels_pair.second.y) - distance_from_rebar_to_background;
 
-                    cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[2].x, frame_history.aoiList[i].points[2].y, Z1);
-                    cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[3].x, frame_history.aoiList[i].points[3].y, Z2);
+                    // cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.first.x + 20, frame_history.aoiList[i].closest_pixels_pair.first.y), 1, cv::Scalar(0, 255, 0), 2);
+                    // cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.second.x - 20, frame_history.aoiList[i].closest_pixels_pair.second.y), 1, cv::Scalar(0, 255, 0), 2);
+
+                    cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y, Z1);
+                    cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y, Z2);
 
                     publish_ball(point1, 0.005, 0, frame_history.ns, ball_pub, {1, 0, 0, 1});
                     publish_ball(point2, 0.005, 1, frame_history.ns, ball_pub, {1, 1, 0, 0});
@@ -515,14 +566,14 @@ public:
                 else if (frame_history.ns == "Horizontal")
                 {
 
-                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y + 20) - distance_from_rebar_to_background;
-                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y + 20) - distance_from_rebar_to_background;
+                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y + 20) - distance_from_rebar_to_background;
+                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y + 20) - distance_from_rebar_to_background;
 
-                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y + 20), 1, cv::Scalar(255, 0, 0), 2);
-                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y + 20), 1, cv::Scalar(255, 0, 0), 2);
+                    // cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y + 20), 1, cv::Scalar(255, 0, 0), 2);
+                    // cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y + 20), 1, cv::Scalar(255, 0, 0), 2);
 
-                    cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].points[0].x, frame_history.aoiList[i].points[0].y, Z1);
-                    cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].points[1].x, frame_history.aoiList[i].points[1].y, Z2);
+                    cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y, Z1);
+                    cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y, Z2);
 
                     publish_ball(point1, 0.005, 2, frame_history.ns, ball_pub, {1, 1, 0, 1});
                     publish_ball(point2, 0.005, 3, frame_history.ns, ball_pub, {1, 0, 1, 1});
@@ -547,8 +598,8 @@ public:
 
                     double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
                 }
-            // cv::imshow("Depth Image", depth_image_rgb);
-            // cv::waitKey(1);
+                // cv::imshow("Depth Image", depth_image_rgb);
+                // cv::waitKey(1);
             }
         }
     }
@@ -557,7 +608,7 @@ public:
     {
         // cv::imshow("Skeleton", frame_history.skeleton);
         // cv::waitKey(1);
-    
+
         // Overlay skeleton on depth image
         cv::Mat overlay;
         cv::Mat skeleton_rgb;
@@ -565,15 +616,15 @@ public:
         cv::cvtColor(frame_history.skeleton, skeleton_rgb, cv::COLOR_GRAY2BGR);
         depth_image_rgb.convertTo(depth_image_rgb_converted, skeleton_rgb.type());
         cv::addWeighted(depth_image_rgb_converted, 0.5, skeleton_rgb, 0.5, 0, overlay);
-    
+
         // cv::imshow("Overlay", overlay);
         // cv::waitKey(1);
-    
+
         int count = 0;
         pcl::PointCloud<pcl::PointXYZ>::Ptr centerline_cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::PointXYZ pcl_point;
         // lopp through all white pixels in the skeleton image and publish them as balls
-    
+
         if (frame_history.ns == "Vertical")
         {
             for (int i = 0; i < frame_history.skeleton.rows; ++i)
@@ -592,7 +643,7 @@ public:
                         centerline_cloud->height = 1;
                         centerline_cloud->width = centerline_cloud->points.size();
                         centerline_cloud->is_dense = true;
-    
+
                         // count++;
                     }
                 }
@@ -622,7 +673,7 @@ public:
                         centerline_cloud->height = 1;
                         centerline_cloud->width = centerline_cloud->points.size();
                         centerline_cloud->is_dense = true;
-    
+
                         // count++;
                     }
                 }
