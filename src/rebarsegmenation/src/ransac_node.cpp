@@ -248,14 +248,12 @@ public:
         {
             cv_ptr = cv_bridge::toCvCopy(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1);
             depth_image = cv_ptr->image;
-            cv::cvtColor(depth_image, depth_image_rgb, cv::COLOR_GRAY2BGR);
-            cv::Mat depth_image_rgb_shifted;
+            cv::Mat depth_image_color;
             cv::Mat depth_image_shifted;
+            cv::cvtColor(depth_image, depth_image_color, cv::COLOR_GRAY2BGR);
             // Shift depth image to the right by 10 pixels
             cv::Mat M = (cv::Mat_<double>(2, 3) << 1, 0, 18, 0, 1, 0);
-            cv::warpAffine(depth_image_rgb, depth_image_rgb_shifted, M, depth_image_rgb.size());
-            cv::warpAffine(depth_image, depth_image_shifted, M, rgb_image.size());
-            depth_image_rgb = depth_image_rgb_shifted;
+            cv::warpAffine(depth_image, depth_image_shifted, M, depth_image.size());
             depth_image = depth_image_shifted;
         }
         catch (cv_bridge::Exception &e)
@@ -344,10 +342,19 @@ public:
         angles = find_rotation(gray_orig, show_angles);
 
         cv::Mat rotated_image = rotate_image("Image", gray_orig, angles.second, show_rotated_image);
+        depth_image_rotated = rotate_image("Depth Image", depth_image, angles.second, show_rotated_image);
+        cv::cvtColor(depth_image_rotated, depth_image_rgb, cv::COLOR_GRAY2BGR);
+
         cv::Mat thresholded_image;
         cv::threshold(rotated_image, thresholded_image, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
         resulting_split = split_horizontal_and_vertical(rotated_image, angles, 60, show_split_image);
+
+        // resulting_split.first = rotate_image("Vertical", resulting_split.first, -angles.second, show_rotated_image);
+        // resulting_split.second = rotate_image("Horizontal", resulting_split.second, -angles.second, show_rotated_image);
+
+        // cv::threshold(resulting_split.first, resulting_split.first, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        // cv::threshold(resulting_split.second, resulting_split.second, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
         verticalProcess();
         horizontalProcess();
@@ -411,37 +418,8 @@ public:
         // Put the FPS text on the frame
         cv::putText(back_rotated_image, fps_text, text_origin, font_face, font_scale, cv::Scalar(0, 255, 0), thickness);
 
-        cv::Mat main_img_converted;
-        if (main_img.type() != depth_image_rgb.type())
-        {
-            main_img.convertTo(main_img_converted, depth_image_rgb.type());
-        }
-        else
-        {
-            main_img_converted = main_img;
-        }
-
-        // Ensure both images have the same number of channels
-        if (main_img_converted.channels() != depth_image_rgb.channels())
-        {
-            if (main_img_converted.channels() == 1)
-            {
-                cv::cvtColor(main_img_converted, main_img_converted, cv::COLOR_GRAY2BGR);
-            }
-            if (depth_image_rgb.channels() == 1)
-            {
-                cv::cvtColor(depth_image_rgb, depth_image_rgb, cv::COLOR_GRAY2BGR);
-            }
-        }
-
         cv::imshow("Projected_Image", back_rotated_image);
         cv::waitKey(1);
-
-        publish_AOI_to_3d(frames_history_vertical);
-        publish_AOI_to_3d(frames_history_horizontal);
-
-        publish_centerline_to_3d(frames_history_vertical);
-        publish_centerline_to_3d(frames_history_horizontal);
 
         // exit_counter++;
         // if (exit_counter == 50)
@@ -457,6 +435,8 @@ public:
         frames_history_vertical.ns = "Vertical";
         detectInterruptions(frames_history_vertical, resulting_split.first, 70, 20, show_roi, show_clusters);
         frames_history_vertical.calculateConfidence();
+        publish_AOI_to_3d(frames_history_vertical);
+        publish_centerline_to_3d(frames_history_vertical);
     }
 
     void horizontalProcess()
@@ -466,6 +446,8 @@ public:
         frames_history_horizontal.ns = "Horizontal";
         detectInterruptions(frames_history_horizontal, resulting_split.second, 70, 10, show_roi, show_clusters);
         frames_history_horizontal.calculateConfidence();
+        publish_AOI_to_3d(frames_history_horizontal);
+        publish_centerline_to_3d(frames_history_horizontal);
     }
 
     void publish_AOI_to_3d(frame_AOI_info frame_history)
@@ -489,29 +471,51 @@ public:
 
             // The closest pair is the first in the sorted list
             const PointPair &closestPair = pairs.front();
+            const PointPair &furthestPair = pairs.back();
+
+            // Draw the furthest pairs on the image
+            cv::circle(main_img, furthestPair.p1, 2, cv::Scalar(0, 0, 255), -1);
+            cv::circle(main_img, furthestPair.p2, 2, cv::Scalar(0, 0, 255), -1);
+
+            cv::imshow("Main Image", main_img);
+            cv::waitKey(1);
 
             // Calculate closes point pair into 3d
             if (frame_history.ns == "Vertical")
             {
-                double Z1 = find_depth(depth_image, closestPair.p1.x - 20, closestPair.p1.y) - distance_from_rebar_to_background;
-                double Z2 = find_depth(depth_image, closestPair.p2.x + 20, closestPair.p2.y) - distance_from_rebar_to_background;
+                double Z1 = find_depth(depth_image_rotated, closestPair.p1.x - 20, closestPair.p1.y) - distance_from_rebar_to_background;
+                double Z2 = find_depth(depth_image_rotated, closestPair.p2.x + 20, closestPair.p2.y) - distance_from_rebar_to_background;
+                double Z3 = find_depth(depth_image_rotated, furthestPair.p1.x - 20, furthestPair.p1.y) - distance_from_rebar_to_background;
+                double Z4 = find_depth(depth_image_rotated, furthestPair.p2.x + 20, furthestPair.p2.y) - distance_from_rebar_to_background;
 
                 cv::Point3f point1 = pixel_to_camera(K, closestPair.p1.x, closestPair.p1.y, Z1);
                 cv::Point3f point2 = pixel_to_camera(K, closestPair.p2.x, closestPair.p2.y, Z2);
+                cv::Point3f point3 = pixel_to_camera(K, furthestPair.p1.x, furthestPair.p1.y, Z3);
+                cv::Point3f point4 = pixel_to_camera(K, furthestPair.p2.x, furthestPair.p2.y, Z4);
 
                 double dist = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
                 std::cout << "Diameter: " << dist << std::endl;
+
+                publish_ball(point3, 0.005, k, frame_history.ns + " - Endpoint3", ball_pub, {1, 0, 1, 1});
+                publish_ball(point4, 0.005, k, frame_history.ns + " - Endpoint4", ball_pub, {1, 0, 1, 1});
             }
             else if (frame_history.ns == "Horizontal")
             {
-                double Z1 = find_depth(depth_image, closestPair.p1.x, closestPair.p1.y - 20) - distance_from_rebar_to_background;
-                double Z2 = find_depth(depth_image, closestPair.p2.x, closestPair.p2.y + 20) - distance_from_rebar_to_background;
+                double Z1 = find_depth(depth_image_rotated, closestPair.p1.x, closestPair.p1.y - 20) - distance_from_rebar_to_background;
+                double Z2 = find_depth(depth_image_rotated, closestPair.p2.x, closestPair.p2.y + 20) - distance_from_rebar_to_background;
+                double Z3 = find_depth(depth_image_rotated, furthestPair.p1.x, furthestPair.p1.y - 20) - distance_from_rebar_to_background;
+                double Z4 = find_depth(depth_image_rotated, furthestPair.p2.x, furthestPair.p2.y + 20) - distance_from_rebar_to_background;
 
                 cv::Point3f point1 = pixel_to_camera(K, closestPair.p1.x, closestPair.p1.y, Z1);
                 cv::Point3f point2 = pixel_to_camera(K, closestPair.p2.x, closestPair.p2.y, Z2);
+                cv::Point3f point3 = pixel_to_camera(K, furthestPair.p1.x, furthestPair.p1.y, Z3);
+                cv::Point3f point4 = pixel_to_camera(K, furthestPair.p2.x, furthestPair.p2.y, Z4);
 
                 double dist = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
                 std::cout << "Diameter: " << dist << std::endl;
+
+                publish_ball(point3, 0.005, k, frame_history.ns + " - Endpoint3", ball_pub, {1, 1, 0, 1});
+                publish_ball(point4, 0.005, k, frame_history.ns + " - Endpoint4", ball_pub, {1, 1, 0, 1});
             }
         }
         for (size_t i = 0; i < frame_history.aoiList.size(); ++i)
@@ -525,11 +529,11 @@ public:
                 if (frame_history.ns == "Vertical")
                 {
 
-                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].closest_pixels_pair.first.x + 20, frame_history.aoiList[i].closest_pixels_pair.first.y) - distance_from_rebar_to_background;
-                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].closest_pixels_pair.second.x - 20, frame_history.aoiList[i].closest_pixels_pair.second.y) - distance_from_rebar_to_background;
+                    double Z1 = find_depth(depth_image_rotated, frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y - 20);
+                    double Z2 = find_depth(depth_image_rotated, frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y + 20);
 
-                    // cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.first.x + 20, frame_history.aoiList[i].closest_pixels_pair.first.y), 1, cv::Scalar(0, 255, 0), 2);
-                    // cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.second.x - 20, frame_history.aoiList[i].closest_pixels_pair.second.y), 1, cv::Scalar(0, 255, 0), 2);
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y - 20), 1, cv::Scalar(0, 255, 0), 2);
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y + 20), 1, cv::Scalar(0, 255, 0), 2);
 
                     cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y, Z1);
                     cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y, Z2);
@@ -557,11 +561,11 @@ public:
                 else if (frame_history.ns == "Horizontal")
                 {
 
-                    double Z1 = find_depth(depth_image, frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y + 20) - distance_from_rebar_to_background;
-                    double Z2 = find_depth(depth_image, frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y + 20) - distance_from_rebar_to_background;
+                    double Z1 = find_depth(depth_image_rotated, frame_history.aoiList[i].closest_pixels_pair.first.x - 20, frame_history.aoiList[i].closest_pixels_pair.first.y);
+                    double Z2 = find_depth(depth_image_rotated, frame_history.aoiList[i].closest_pixels_pair.second.x + 20, frame_history.aoiList[i].closest_pixels_pair.second.y);
 
-                    // cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y + 20), 1, cv::Scalar(255, 0, 0), 2);
-                    // cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y + 20), 1, cv::Scalar(255, 0, 0), 2);
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.first.x - 20, frame_history.aoiList[i].closest_pixels_pair.first.y), 1, cv::Scalar(255, 0, 0), 2);
+                    cv::circle(depth_image_rgb, cv::Point(frame_history.aoiList[i].closest_pixels_pair.second.x + 20, frame_history.aoiList[i].closest_pixels_pair.second.y), 1, cv::Scalar(255, 0, 0), 2);
 
                     cv::Point3f point1 = pixel_to_camera(K, frame_history.aoiList[i].closest_pixels_pair.first.x, frame_history.aoiList[i].closest_pixels_pair.first.y, Z1);
                     cv::Point3f point2 = pixel_to_camera(K, frame_history.aoiList[i].closest_pixels_pair.second.x, frame_history.aoiList[i].closest_pixels_pair.second.y, Z2);
@@ -589,24 +593,14 @@ public:
 
                     double distance = std::sqrt(std::pow(point1.x - point2.x, 2) + std::pow(point1.y - point2.y, 2) + std::pow(point1.z - point2.z, 2));
                 }
-                // cv::imshow("Depth Image", depth_image_rgb);
-                // cv::waitKey(1);
+                cv::imshow("Depth Image", depth_image_rgb);
+                cv::waitKey(1);
             }
         }
     }
 
     void publish_centerline_to_3d(frame_AOI_info frame_history)
     {
-        // cv::imshow("Skeleton", frame_history.skeleton);
-        // cv::waitKey(1);
-
-        // Overlay skeleton on depth image
-        cv::Mat overlay;
-        cv::Mat skeleton_rgb;
-        cv::Mat depth_image_rgb_converted;
-        cv::cvtColor(frame_history.skeleton, skeleton_rgb, cv::COLOR_GRAY2BGR);
-        depth_image_rgb.convertTo(depth_image_rgb_converted, skeleton_rgb.type());
-        cv::addWeighted(depth_image_rgb_converted, 0.5, skeleton_rgb, 0.5, 0, overlay);
 
         // cv::imshow("Overlay", overlay);
         // cv::waitKey(1);
@@ -624,7 +618,7 @@ public:
                 {
                     if (frame_history.skeleton.at<uchar>(i, j) == 255)
                     {
-                        double Z = find_depth(depth_image, j, i);
+                        double Z = find_depth(depth_image_rotated, j, i);
                         cv::Point3f point = pixel_to_camera(K, j, i, Z);
                         // create a new pointcloud with the centerline points
                         pcl_point.x = point.x;
@@ -654,7 +648,7 @@ public:
                 {
                     if (frame_history.skeleton.at<uchar>(i, j) == 255)
                     {
-                        double Z = find_depth(depth_image, j, i);
+                        double Z = find_depth(depth_image_rotated, j, i);
                         cv::Point3f point = pixel_to_camera(K, j, i, Z);
                         // create a new pointcloud with the centerline points
                         pcl_point.x = point.x;
@@ -713,6 +707,7 @@ private:
     cv::Mat rgb_image;
     cv::Mat depth_image;
     cv::Mat depth_image_rgb;
+    cv::Mat depth_image_rotated;
     cv::Mat main_img;
     cv::Mat gray_orig;
     cv::Mat thinned_image;

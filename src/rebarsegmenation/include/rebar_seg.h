@@ -33,6 +33,7 @@ struct Cluster
     cv::Point centroid;
     cv::Point2f center;
     std::vector<cv::Point2f> midpoints;
+    
 };
 
 struct AOI
