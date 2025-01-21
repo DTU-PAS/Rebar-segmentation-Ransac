@@ -55,6 +55,12 @@ std::pair<double, double> find_rotation(cv::Mat &image, bool debug_level)
 
 cv::Mat rotate_image(const std::string &name, const cv::Mat &image, double angle, bool debug_level)
 {
+
+    if (image.empty())
+    {
+        ROS_ERROR("Input image for rotation is empty");
+        return cv::Mat();
+    }
     int h = image.rows;
     int w = image.cols;
 

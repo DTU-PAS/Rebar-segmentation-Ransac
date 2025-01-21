@@ -1,8 +1,13 @@
 <launch>
 
     <!-- RVIZ visualization -->
-    <!-- <arg name="rviz_file" default="rebarsegmenation" /> -->
-    <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find rebarsegmenation)/rviz/$(arg rviz_file).rviz" /> -->
+    <arg name="rviz_file" default="rebarsegmenation" />
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find rebarsegmenation)/rviz/$(arg rviz_file).rviz" />
+    
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <arg name="align_depth" value="True"/>
+        <arg name="filters" value="pointcloud"/>
+    </include>
 
     <!-- RQT -->
     <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
