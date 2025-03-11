@@ -38,7 +38,7 @@ jobs:
           source /opt/ros/$ROS_DISTRO/setup.bash
           ln -s $GITHUB_WORKSPACE ~/Rebar-segmentation-Ransac
           ls -a
-          cd ~/Rebar-segmentation-Ransac
+          cd ~/Rebar-segmentation-Ransac/catkin_ws
           ls -a
           catkin_make
           source devel/setup.bash
