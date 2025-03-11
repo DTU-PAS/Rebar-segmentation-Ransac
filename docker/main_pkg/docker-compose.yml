@@ -1,0 +1,19 @@
+# docker-compose-nvidia.yml
+#
+# This file extend the common settings for the ROS service without dedicated GPU.
+#
+# author [Lars Dethlefsen] - lars.dethlefsen@gmail.com
+# version 0.1
+# date 2025-01-27
+
+# Copyright (c) 2025 - DTU. All rights reserved.
+
+services:
+  ros:
+    extends:
+      file: docker-compose-common.yml
+      service: common
+    environment:
+      - LIBVA_DRIVER_NAME=i965
+    devices:
+      - /dev/dri:/dev/dri

@@ -4,7 +4,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/DTU-PAS/">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="doc/images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
   <h1 align="center">Rebar Segmentation using Ransac</h1>
@@ -9384,8 +9384,8 @@ endsolid
 ```
 
 The finished setup can be seen in the pictures below. Some rebars were additionally cut in half and spread appart to demonstrate damages.
-<p align=center><img src="images/Setup/spacers.png" height="480">
-<img src="images/Setup/setup.png" height="480">
+<p align=center><img src="doc/images/Setup/spacers.png" height="480">
+<img src="doc/images/Setup/setup.png" height="480">
 </p>
 
 
@@ -9395,16 +9395,37 @@ The finished setup can be seen in the pictures below. Some rebars were additiona
    ```sh
    git clone https://github.com/DTU-PAS/Rebar-segmentation-Ransac.git
    ```
-2. Compile the package
+2. Compile the package from the catkin_ws folder
    ```sh
    catkin_make
    ```
-3. Open 2 terminal windows with the following commands
+### Usage
+1. Open 2 terminal windows with the following commands
    ```sh
    roslaunch realsense2_camera rs_camera.launch align_depth:=True filters:=pointcloud
    ```
    ```sh
    roslaunch rebarsegmenation rebarsegmenation.launch
+   ```
+
+### Usage docker
+1. 
+   ```sh
+   cd ./docker/main_pkg
+   ```
+   ```sh
+   sudo docker compose build
+   ```
+    ```sh
+   sudo docker compose up
+   ```
+   To start a shell in the container
+    ```sh
+   sudo docker exec -it ros_noetic_t5.3_irr_rebars_segmentation_development bash
+   ```
+   To attach to the container (if display support is needed)
+    ```sh
+   sudo docker attach ros_noetic_t5.3_irr_rebars_segmentation_development
    ```
 
 
@@ -9414,10 +9435,10 @@ The finished setup can be seen in the pictures below. Some rebars were additiona
 ## Results
 
 <p align=center>
-<img src="images/Results/Screenshot from 2024-08-13 15-20-29.png" height="480">
-<img src="images/Results/Screenshot from 2024-08-13 15-23-08.png" height="480">
-<img src="images/Results/Screenshot from 2024-08-13 15-23-38.png" height="480">
-<img src="images/Results/Screenshot from 2024-08-13 15-24-11.png" height="480">
+<img src="doc/images/Results/Screenshot from 2024-08-13 15-20-29.png" height="480">
+<img src="doc/images/Results/Screenshot from 2024-08-13 15-23-08.png" height="480">
+<img src="doc/images/Results/Screenshot from 2024-08-13 15-23-38.png" height="480">
+<img src="doc/images/Results/Screenshot from 2024-08-13 15-24-11.png" height="480">
 </p>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

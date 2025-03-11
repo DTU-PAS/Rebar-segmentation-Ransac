@@ -1,0 +1,26 @@
+# docker-compose-nvidia.yml
+#
+# This file extend the common settings for the ROS service to use the GPU.
+#
+# author [Lars Dethlefsen] - lars.dethlefsen@gmail.com
+# version 0.1
+# date 2025-01-27
+
+# Copyright (c) 2025 - DTU. All rights reserved.
+
+services:
+  ros:
+    extends:
+      file: docker-compose-common.yml
+      service: common
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]

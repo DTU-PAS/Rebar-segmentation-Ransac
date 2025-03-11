@@ -1,4 +1,7 @@
-#include <rebar_seg.h>
+#include <image_processing.h>
+#include <ransac_node.h>
+#include <publish.h>
+#include <utils.h>
 
 std::pair<double, double> find_rotation(cv::Mat &image, bool debug_level)
 {
@@ -75,10 +78,10 @@ cv::Mat rotate_image(const std::string &name, const cv::Mat &image, double angle
 
     if (debug_level)
     {
-        cv::imshow("Original " + name, image);
-        cv::waitKey(1);
-        cv::imshow("Rotated " + name, rotated);
-        cv::waitKey(1);
+        // cv::imshow("Original " + name, image);
+        // cv::waitKey(1);
+        // cv::imshow("Rotated " + name, rotated);
+        // cv::waitKey(1);
     }
 
     return rotated;
@@ -118,9 +121,9 @@ std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, 
 
     if (debug_level)
     {
-        cv::imshow("Detected Horizontal Lines", horizontalLines);
-        cv::imshow("Detected Vertical Lines", verticalLines);
-        cv::waitKey(1);
+        // cv::imshow("Detected Horizontal Lines", horizontalLines);
+        // cv::imshow("Detected Vertical Lines", verticalLines);
+        // cv::waitKey(1);
     }
 
     return std::make_pair(verticalLines, horizontalLines);
@@ -130,7 +133,7 @@ std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, 
 {
 
     // Create a horizontal kernel
-    cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(25, 1));
+    cv::Mat horizontalKernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(50, 1));
 
     // Create a larger square kernel that can accommodate the rotation
     int kernelSize = std::max(horizontalKernel.cols, horizontalKernel.rows) * 2;
@@ -166,14 +169,6 @@ std::pair<cv::Mat, cv::Mat> split_horizontal_and_vertical(const cv::Mat &image, 
     return std::make_pair(detectedLines, detectedLines);
 }*/
 
-cv::Vec3b random_color()
-{
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<> dis(0, 255);
-    return cv::Vec3b(dis(gen), dis(gen), dis(gen));
-}
-
 cluster_info cluster(const std::string &name, const cv::Mat &img, bool debug_level)
 {
     int height = img.rows;
@@ -188,6 +183,7 @@ cluster_info cluster(const std::string &name, const cv::Mat &img, bool debug_lev
     for (int i = 0; i < num_labels; ++i)
     {
         colors[i] = random_color();
+        
     }
 
     for (int y = 0; y < height; ++y)
@@ -203,38 +199,14 @@ cluster_info cluster(const std::string &name, const cv::Mat &img, bool debug_lev
 
     if (debug_level)
     {
-        cv::imshow("Clustered " + name, cluster_img);
-        cv::waitKey(1);
+        // cv::imshow("Clustered " + name, cluster_img);
+        // cv::waitKey(1);
     }
 
     return cluster_info{cluster_img, num_labels - 1, labels, stats, centroids};
 }
 
-// Helper function to clamp a value within a range
-int clamp(int value, int min_val, int max_val)
-{
-    return std::max(min_val, std::min(value, max_val));
-}
-
-double euclideanDistance(cv::Point2d pt1, cv::Point2d pt2)
-{
-    return std::sqrt((pt1.x - pt2.x) * (pt1.x - pt2.x) + (pt1.y - pt2.y) * (pt1.y - pt2.y));
-}
-
-float computeIoU(const AOI &a, const AOI &b)
-{
-    int x1 = std::max(a.bounding_box.first.x, b.bounding_box.first.x);
-    int y1 = std::max(a.bounding_box.first.y, b.bounding_box.first.y);
-    int x2 = std::min(a.bounding_box.second.x, b.bounding_box.second.x);
-    int y2 = std::min(a.bounding_box.second.y, b.bounding_box.second.y);
-
-    int intersectionArea = std::max(0, x2 - x1) * std::max(0, y2 - y1);
-    int unionArea = a.area() + b.area() - intersectionArea;
-
-    return static_cast<float>(intersectionArea) / unionArea;
-}
-
-void computeAOI(frame_AOI_info &frame_history, AOI current_aoi/*, std::vector<cv::Point> points*/, int highestId = 0)
+void computeAOI(frame_AOI_info &frame_history, AOI current_aoi /*, std::vector<cv::Point> points*/, int highestId = 0)
 {
     bool matched = false;
     if (frame_history.aoiList.size() <= 0)
@@ -428,59 +400,9 @@ void detectInterruptions(frame_AOI_info &frame_history, const cv::Mat &lineImage
             current_aoi.closest_pixels_pair = std::make_pair(pt1, pt2);
             current_aoi.bounding_box = std::make_pair(cv::Point(x1, y1), cv::Point(x2, y2));
             // std::vector<cv::Point2f> points = clusters[clusterPairs[i].first].midpoints;
-            computeAOI(frame_history, current_aoi/*, points*/, highestId);
+            computeAOI(frame_history, current_aoi /*, points*/, highestId);
         }
     }
-}
-
-cv::Point3f pixel_to_camera(cv::Mat K, int u, int v, float Z)
-{
-    cv::Mat K_inv = K.inv();
-    cv::Mat pixel_coords = (cv::Mat_<double>(3, 1) << u, v, 1);
-    cv::Mat camera_coords = K_inv * pixel_coords * Z;
-
-    return cv::Point3f(camera_coords.at<double>(0, 0), camera_coords.at<double>(1, 0), camera_coords.at<double>(2, 0));
-}
-
-void deleteMarkers(ros::Publisher &pub)
-{
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "camera_color_optical_frame";
-    marker.action = visualization_msgs::Marker::DELETEALL;
-    pub.publish(marker);
-}
-
-void publish_ball(cv::Point3f &coord, float size, int ID, const std::string &ns, ros::Publisher &pub, const std::vector<int> &color)
-{
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "camera_color_optical_frame";
-    marker.header.stamp = ros::Time::now();
-    marker.ns = ns;
-    marker.lifetime = ros::Duration(1);
-
-    marker.type = visualization_msgs::Marker::SPHERE;
-
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.scale.x = size;
-    marker.scale.y = size;
-    marker.scale.z = size;
-
-    marker.color.a = color[0];
-    marker.color.r = color[1];
-    marker.color.g = color[2];
-    marker.color.b = color[3];
-
-    marker.id = ID;
-    marker.pose.position.x = coord.x;
-    marker.pose.position.y = coord.y;
-    marker.pose.position.z = coord.z;
-
-    marker.pose.orientation.x = 0.0;
-    marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 0.0;
-    marker.pose.orientation.w = 1.0;
-
-    pub.publish(marker);
 }
 
 double find_depth(const cv::Mat &depth_image, int u, int v)
@@ -503,4 +425,92 @@ double find_depth(const cv::Mat &depth_image, int u, int v)
     }
 
     return 0.0;
+}
+
+
+
+// This function is used to detect the width of the rebar in the image using the image processing techniques
+// When the rebar suddenly changes its width, it is marked as a defect
+std::vector<skeleton_info> detect_width(frame_AOI_info &frame_history, cv::Mat &binary)
+{
+    // cv::imshow("Binary", binary);
+    // cv::waitKey(1);
+    // 4. Distance transform on this component
+    cv::Mat dist;
+    cv::distanceTransform(binary, dist, cv::DIST_L2, 3);
+
+    // cv::imshow("Binary", binary);
+    // cv::waitKey(1);
+
+    cluster_info result = cluster("FAOI: " + frame_history.ns, binary, 0);
+
+    // The 0-th component is background. So real components are [1..nComponents-1].
+    std::cout << "Found " << (result.num_clusters) << " separate rebar component(s)\n";
+
+    std::vector<skeleton_info> skeleton_info_list;
+    for (int c = 1; c < result.num_clusters +1; c++) 
+    {
+        // 3. Create a mask for component c
+        // Using a comparison to build a mask: (labels == c) → 255, else 0
+        cv::Mat componentMask = (result.labels == c);
+        componentMask.convertTo(componentMask, CV_8UC1, 255); // convert bool to 0/255
+        
+        // Optional: Clean up small noise inside the mask if needed
+        // e.g., morphological opening, etc.
+        
+        cv::Mat skel;
+        skeleton_info skel_info;
+        skel_info.skeleton = skel;
+        skel_info.binary = componentMask;
+        
+        cv::ximgproc::thinning(componentMask, skel, cv::ximgproc::THINNING_GUOHALL);
+
+
+        // cv::imshow("Skeleton", skel);
+        // cv::waitKey(0);
+
+        // 6. Collect skeleton points + width
+        std::vector<SkelPoint> skelPoints;
+        for (int y = 0; y < skel.rows; y++) {
+            const uchar *skelRow = skel.ptr<uchar>(y);
+            for (int x = 0; x < skel.cols; x++) {
+                if (skelRow[x] == 255) {
+                    float d = dist.at<float>(y, x);
+                    float width = 2.0f * d;
+                    skelPoints.push_back(SkelPoint((float)x, (float)y, width));
+                }
+            }
+        }
+
+        // print width of each skeleton point
+        // for (auto &pt : skelPoints) {
+        //     std::cout << "Skeleton point at " << std::to_string(c) << frame_history.ns << " (" << pt.x << ", " << pt.y << ") has width " << pt.width << std::endl;
+        // }
+        // std::cout << "\n";
+
+        cv::Mat colorVis;
+        cv::cvtColor(binary, colorVis, cv::COLOR_GRAY2BGR); // skeleton is 0/255
+        for (size_t i = 0; i < skelPoints.size(); ++i) {
+            if (skelPoints[i].width > 20.0f) {
+                cv::Point pt(skelPoints[i].x, skelPoints[i].y);
+                skel_info.points.push_back(pt);
+                cv::circle(colorVis, pt , 3, cv::Scalar(0, 0, 255), -1); // mark in red
+            }
+        }
+
+        // // Normalize distance transform for display
+        cv::Mat distVis;
+        cv::normalize(dist, distVis, 0, 1.0, cv::NORM_MINMAX);
+
+        for (auto &pt : skelPoints) {
+            cv::circle(colorVis, cv::Point((int)pt.x, (int)pt.y), 1, cv::Scalar(255, 0, 0), -1);
+        }
+
+        // cv::imshow("Binary Input", binary);
+        cv::imshow("Width change" + frame_history.ns, colorVis);
+        // cv::imshow("Distance Transform", distVis);
+        cv::waitKey(1);
+        skeleton_info_list.push_back(skel_info);
+    }
+    return skeleton_info_list;
 }
